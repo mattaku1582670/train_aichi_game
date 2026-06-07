@@ -41,18 +41,35 @@ header span{font-size:10px;opacity:.92;}
 @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}}
 .transfer .q{font-size:13px;font-weight:700;margin-bottom:6px;}
 .transfer .opts{display:flex;flex-wrap:wrap;gap:6px;}
-.move-head{font-size:13px;font-weight:700;margin-bottom:8px;text-align:center;}
-.move-head b{color:var(--og);font-size:16px;}
-.arrow-grid{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto auto;
-  gap:6px;justify-items:center;align-items:center;max-width:340px;margin:0 auto;}
-.arrow{display:flex;flex-direction:column;align-items:center;gap:1px;background:#fff;
-  border:3px solid #ccc;border-radius:12px;padding:7px 4px;cursor:pointer;font-family:inherit;
-  width:100%;min-height:62px;justify-content:center;transition:transform .08s;}
-.arrow:active{transform:scale(.95);}
-.arrow-up{grid-column:2;grid-row:1;}
-.arrow-left{grid-column:1;grid-row:2;}
-.arrow-right{grid-column:3;grid-row:2;}
-.arrow-down{grid-column:2;grid-row:3;}
+.move-head{font-size:14px;font-weight:700;text-align:center;padding:6px 0;}
+.move-head b{color:var(--og);font-size:18px;}
+/* 地図上オーバーレイ矢印 */
+.nav-marker{cursor:pointer;pointer-events:auto;}
+.nav-bubble{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.92);border:3px solid #ccc;border-radius:14px;
+  padding:6px 8px;gap:2px;min-width:60px;
+  box-shadow:0 3px 12px rgba(0,0,0,0.25);
+  transition:transform .1s;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  backdrop-filter:blur(4px);
+}
+.nav-bubble:hover{transform:scale(1.08);}
+.nav-bubble:active{transform:scale(.95);}
+.nav-arrow{font-size:22px;line-height:1;}
+.nav-name{font-size:10px;font-weight:800;white-space:nowrap;color:#1a1410;}
+.nav-line{font-size:9px;font-weight:700;white-space:nowrap;}
+/* 現在地パルスリング */
+.pulse-ring{
+  width:40px;height:40px;border-radius:50%;
+  border:3px solid currentColor;
+  animation:pulse-anim 1.4s ease-out infinite;
+  pointer-events:none;
+}
+@keyframes pulse-anim{
+  0%{transform:scale(1);opacity:.9;}
+  70%{transform:scale(2.2);opacity:0;}
+  100%{transform:scale(2.2);opacity:0;}
+}
 .tbtn{background:#fff;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:800;
   cursor:pointer;font-family:inherit;border-width:3px;border-style:solid;}
 .tbtn:active{transform:scale(.97);}
@@ -232,6 +249,8 @@ viewBtn.addEventListener("click",()=>{
   followMode=!followMode;
   if(followMode){viewBtn.textContent="🔍 ぜんたいを みる";focusPlayer(true);}
   else{viewBtn.textContent="🚃 じぶんに よる";map.fitBounds(allBounds,{padding:[40,40]});}
+  // 移動フェーズ中はnavマーカーを再配置
+  if(phase==="move") setTimeout(showNavMarkers,350);
 });
 function focusPlayer(animate){
   const s=curS();
@@ -267,105 +286,158 @@ function rollDice(){
       clearInterval(iv); die.classList.remove("shake");
       const f=Math.floor(Math.random()*6)+1; die.textContent=DICE[f];
       stepCount=f;
-      lastNode=null; // 新ターンは戻り方向の記録をリセット
+      turnHistory=[]; // 新ターン：履歴リセット
       phase="move";
-      setTimeout(showDirections,350);
+      renderMovePanel();
+      setTimeout(showNavMarkers,350);
     }
   },65);
 }
 
 /* ======= 隣接ノード計算 ======= */
-// 現在地から1歩で行ける駅(同一路線の前後＋乗換先)を集め、方角で矢印化
 function neighbors(node){
-  const res=[]; // {line,idx,label,bearing}
+  const res=[];
   const line=STATIONS[node.line];
   const isLoop=LOOP_LINES.includes(node.line);
-  // 同一路線の前後
   [+1,-1].forEach(d=>{
     let ni=node.idx+d;
     if(isLoop) ni=(ni+line.length)%line.length;
     if(ni>=0&&ni<line.length) res.push({line:node.line,idx:ni});
   });
-  // 乗換先
   const tr=TRANSFERS[`${node.line}:${node.idx}`];
   if(tr) tr.forEach(t=>res.push({line:t.line,idx:t.idx}));
-  // 方角を計算
   const from=STATIONS[node.line][node.idx];
   res.forEach(r=>{
     const to=STATIONS[r.line][r.idx];
-    const dx=(to.lng-from.lng), dy=(to.lat-from.lat);
-    r.bearing=Math.atan2(dy,dx); // ラジアン
+    r.bearing=Math.atan2(to.lat-from.lat,to.lng-from.lng);
     r.station=to;
   });
   return res;
 }
-// bearingを上下左右に割当（重複時はずらす）
-function assignArrows(nbs){
-  // 角度→方向: 右(0),上(90),左(180),下(-90)付近
-  const dirs={right:null,up:null,left:null,down:null};
-  const cand=nbs.map(n=>{
-    const deg=n.bearing*180/Math.PI;
-    let pref;
-    if(deg>=-45&&deg<45) pref="right";
-    else if(deg>=45&&deg<135) pref="up";
-    else if(deg>=135||deg<-135) pref="left";
-    else pref="down";
-    return {...n,pref,deg};
-  });
+
+/* ======= 地図上ナビマーカー ======= */
+let navMarkers=[];   // 移動先候補マーカー群
+let pulseMarker=null; // 現在地パルスリング
+
+const ARROW_FOR_DEG={right:"➡️",up:"⬆️",left:"⬅️",down:"⬇️"};
+function bearingToDir(deg){
+  if(deg>=-45&&deg<45) return "right";
+  if(deg>=45&&deg<135) return "up";
+  if(deg>=135||deg<-135) return "left";
+  return "down";
+}
+// オフセット：マーカーを駅位置から少しずらして重ならないように
+const DIR_OFFSET={right:[0,0.003],up:[0.002,0],left:[0,-0.003],down:[-0.002,0]};
+
+function clearNavMarkers(){
+  navMarkers.forEach(m=>map.removeLayer(m));
+  navMarkers=[];
+  if(pulseMarker){map.removeLayer(pulseMarker);pulseMarker=null;}
+}
+
+function showNavMarkers(){
+  clearNavMarkers();
+  if(phase!=="move") return;
+
+  // 現在地パルスリング
+  const cs=curS();
+  const lineColor=LINE_META[cur.line].color;
+  pulseMarker=L.marker([cs.lat,cs.lng],{
+    icon:L.divIcon({className:"",
+      html:`<div class="pulse-ring" style="color:${lineColor}"></div>`,
+      iconSize:[40,40],iconAnchor:[20,20]}),
+    interactive:false,zIndexOffset:900
+  }).addTo(map);
+
+  // 隣接駅にナビバブルを配置
+  const nbs=neighbors(cur);
+  // 重複方角の解消（同じdirには最大1個）
+  const usedDir={};
   const order=["right","up","left","down"];
-  // 各方向に最も近いものを割当、埋まっていたら空き方向へ
-  cand.forEach(c=>{
-    if(dirs[c.pref]===null){dirs[c.pref]=c;return;}
-    // 空き方向を探す（近い順）
-    for(const d of order){ if(dirs[d]===null){dirs[d]=c;return;} }
+  nbs.forEach(n=>{
+    const deg=n.bearing*180/Math.PI;
+    let dir=bearingToDir(deg);
+    if(usedDir[dir]){for(const d of order){if(!usedDir[d]){dir=d;break;}}}
+    if(usedDir[dir]) return; // 全方向埋まったら無視
+    usedDir[dir]=true;
+
+    const color=LINE_META[n.line].color;
+    const isTransfer=n.line!==cur.line;
+    const lineLabel=isTransfer?`<div class="nav-line" style="color:${color}">${LINE_META[n.line].short}</div>`:"";
+    const arrow=ARROW_FOR_DEG[dir];
+
+    // 戻り先（turnHistory末尾）ならバッジを変える
+    const isBack=turnHistory.length>0&&
+      turnHistory[turnHistory.length-1].line===n.line&&
+      turnHistory[turnHistory.length-1].idx===n.idx;
+
+    const html=`<div class="nav-bubble" style="border-color:${color};${isBack?"background:rgba(255,245,157,0.95)":""}"
+      onclick="window._go('${n.line}',${n.idx})">
+      <div class="nav-arrow">${arrow}</div>
+      <div class="nav-name">${n.station.name}</div>
+      ${lineLabel}
+      ${isBack?`<div style="font-size:9px;color:#e65100">↩+1回復</div>`:""}
+    </div>`;
+
+    const off=DIR_OFFSET[dir]||[0,0];
+    const m=L.marker([cs.lat+off[0],cs.lng+off[1]],{
+      icon:L.divIcon({className:"nav-marker",html,iconSize:[null,null],iconAnchor:[30,30]}),
+      zIndexOffset:950
+    }).addTo(map);
+    navMarkers.push(m);
   });
-  return dirs;
+}
+
+/* ======= パネル表示（移動中） ======= */
+function renderMovePanel(){
+  $("action").innerHTML=
+    `<div class="move-head">🎲 のこり <b id="step-count">${stepCount}</b> マス｜地図の 矢印を タップ！</div>`;
+}
+function updateStepCount(){
+  const el=document.getElementById("step-count");
+  if(el) el.textContent=stepCount;
 }
 
 /* ======= 移動 ======= */
-let lastNode=null; // 直前にいた駅（戻り判定用）
-function showDirections(){
-  const nbs=neighbors(cur);
-  const dirs=assignArrows(nbs);
-  renderArrows(dirs);
-}
-function renderArrows(dirs){
-  const arrowMeta={up:{sym:"⬆️",pos:"up"},down:{sym:"⬇️",pos:"down"},left:{sym:"⬅️",pos:"left"},right:{sym:"➡️",pos:"right"}};
-  let btns="";
-  for(const[d,n]of Object.entries(dirs)){
-    if(!n)continue;
-    const c=LINE_META[n.line].color;
-    const lineLabel = n.line!==cur.line ? `<span style="font-size:9px;display:block;color:${c}">${LINE_META[n.line].short}</span>`:"";
-    btns+=`<button class="arrow arrow-${d}" style="border-color:${c}" onclick="_go('${n.line}',${n.idx})">
-      <span style="font-size:24px">${arrowMeta[d].sym}</span>
-      <span style="font-size:11px;font-weight:800">${n.station.name}</span>${lineLabel}</button>`;
-  }
-  $("action").innerHTML=
-    `<div class="move-head">🎲 のこり <b>${stepCount}</b> マス｜どっちに すすむ？</div>
-     <div class="arrow-grid">${btns}</div>`;
-}
+// turnHistory: [{line,idx},...] 今ターンに踏んだ駅の記録（桃鉄の戻り判定用）
+let turnHistory=[];
+
 function _go(lineId,idx){
   if(phase!=="move")return;
+  clearNavMarkers();
+
   const fromS=curS();
-  const prevNode={line:cur.line,idx:cur.idx};
   const nc={line:lineId,idx:idx};
   const toS=STATIONS[nc.line][nc.idx];
   const color=LINE_META[nc.line].color;
-  stepCount--;
+
+  // 桃鉄方式：戻った場合はstepCountを回復、進んだ場合は消費
+  const isBack=turnHistory.length>0&&
+    turnHistory[turnHistory.length-1].line===nc.line&&
+    turnHistory[turnHistory.length-1].idx===nc.idx;
+
+  if(isBack){
+    stepCount++;        // 戻った→回復
+    turnHistory.pop();  // 履歴から削除
+  } else {
+    stepCount--;        // 進んだ→消費
+    turnHistory.push({line:cur.line,idx:cur.idx}); // 現在地を履歴に積む
+  }
+
   phase="anim";
-  animateTrain([fromS.lat,fromS.lng],[toS.lat,toS.lng],color,400,()=>{
-    lastNode=prevNode;
+  animateTrain([fromS.lat,fromS.lng],[toS.lat,toS.lng],color,380,()=>{
     cur=nc;
     visited.add(`${cur.line}:${cur.idx}`);
     placeTrain(toS.lat,toS.lng,color);
     renderChips();
-    if(isGoal(cur)){setTimeout(showWin,400);return;}
+    if(isGoal(cur)){clearNavMarkers();setTimeout(showWin,400);return;}
     if(stepCount<=0){
-      // 停止：豆知識/クイズ→次ターン
+      clearNavMarkers();
       if(toS.fact){phase="popup";setTimeout(showFact,200);}
       else{phase="roll";renderRoll(false);}
     } else {
-      phase="move"; setTimeout(showDirections,250);
+      updateStepCount();
+      phase="move"; setTimeout(showNavMarkers,280);
     }
   });
 }
@@ -411,6 +483,7 @@ function _ans(i){
 }
 function closePopup(){
   $("ovPopup").classList.remove("show");
+  clearNavMarkers();
   phase="roll"; renderRoll(false);
 }
 window._afterFact=_afterFact; window._ans=_ans; window._closePopup=closePopup;
