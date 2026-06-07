@@ -1,100 +1,81 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>あいち でんしゃ すごろく</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  :root{
-    --orange:#ff7043; --orange-d:#e64a19; --green:#4caf50; --green-d:#2e7d32;
-    --cream:#fff7e6; --brown:#5d4037;
-  }
-  html,body{height:100%;overflow:hidden;
-    font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Rounded Mplus 1c",sans-serif;
-    background:#cfe3ea;user-select:none;-webkit-user-select:none;}
-  #app{display:flex;flex-direction:column;height:100dvh;}
-
-  header{flex:0 0 auto;background:var(--orange);color:#fff;
-    padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 3px 0 var(--orange-d);z-index:500;}
-  header .title{line-height:1.1;}
-  header .title b{font-size:17px;font-weight:800;display:block;}
-  header .title span{font-size:10px;opacity:.92;}
-  #coins{margin-left:auto;background:#fff;color:var(--orange);border-radius:999px;
-    padding:5px 13px;font-weight:800;font-size:15px;box-shadow:0 2px 0 var(--orange-d);}
-
-  #map{flex:1 1 auto;background:#cfe3ea;z-index:1;}
-  .leaflet-container{font-family:inherit;background:#cfe3ea;}
-
-  /* ビュー切替ボタン */
-  #viewBtn{position:absolute;top:64px;right:12px;z-index:600;
-    background:#fff;border:3px solid var(--orange);color:var(--orange);
-    border-radius:12px;padding:8px 12px;font-size:13px;font-weight:800;
-    font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #0002;}
-  #viewBtn:active{transform:translateY(2px);box-shadow:none;}
-
-  /* パネル */
-  #panel{flex:0 0 auto;background:#fff;border-top:4px solid #ffb74d;
-    padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px;z-index:500;}
-  .chips{display:flex;gap:6px;flex-wrap:wrap;}
-  .chip{display:inline-flex;align-items:center;gap:4px;background:#fff3e0;color:var(--brown);
-    border:2px solid #ffcc80;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;}
-  .chip.line{border:none;color:#fff;}
-  .chip b{font-weight:800;}
-
-  .controls{display:flex;gap:10px;}
-  #roll{flex:1;background:var(--green);color:#fff;border:none;border-radius:14px;
-    font-size:19px;font-weight:800;padding:15px 0;cursor:pointer;
-    box-shadow:0 4px 0 var(--green-d);font-family:inherit;}
-  #roll:disabled{background:#aaa;box-shadow:none;cursor:default;}
-  #roll:active:not(:disabled){transform:translateY(4px);box-shadow:none;}
-  #die{width:66px;background:#fffde7;border:3px solid #fbc02d;border-radius:16px;
-    display:flex;align-items:center;justify-content:center;font-size:38px;}
-  #die.shake{animation:shake .5s linear;}
-  @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}}
-
-  .transfer .q{font-size:13px;font-weight:700;margin-bottom:6px;}
-  .transfer .opts{display:flex;flex-wrap:wrap;gap:6px;}
-  .tbtn{background:#fff;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:800;
-    cursor:pointer;font-family:inherit;border-width:3px;border-style:solid;}
-
-  /* 凡例 */
-  #legend{flex:0 0 auto;background:var(--brown);display:flex;gap:8px;padding:5px 14px;flex-wrap:wrap;z-index:500;}
-  #legend .item{display:flex;align-items:center;gap:4px;}
-  #legend .bar{width:16px;height:5px;border-radius:3px;}
-  #legend span{font-size:10px;color:#fff;}
-
-  /* オーバーレイ（豆知識・クイズ・勝利） */
-  .overlay{position:fixed;inset:0;z-index:1000;background:#000a;display:none;
-    align-items:center;justify-content:center;padding:18px;}
-  .overlay.show{display:flex;animation:fade .35s;}
-  @keyframes fade{from{opacity:0}to{opacity:1}}
-  .card{background:#fff;border-radius:20px;padding:18px;max-width:360px;width:100%;
-    display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px #0006;}
-  .card .stn{font-size:13px;color:var(--orange);font-weight:800;}
-  .card .fact{font-size:14px;line-height:1.7;background:#fff8e1;padding:12px;border-radius:12px;}
-  .quiz-type{align-self:center;background:#e3f2fd;color:#1565c0;border-radius:999px;
-    padding:2px 12px;font-size:12px;font-weight:700;}
-  .quiz-q{font-size:18px;font-weight:800;text-align:center;margin:6px 0;}
-  .qopts{display:flex;flex-direction:column;gap:8px;}
-  .qopt{background:#fff;border:3px solid #ffb74d;border-radius:12px;padding:12px;
-    font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;}
-  .qopt:disabled{cursor:default;}
-  .result{text-align:center;font-size:16px;font-weight:800;}
-  .bigbtn{color:#fff;border:none;border-radius:14px;padding:13px;font-size:16px;
-    font-weight:800;cursor:pointer;font-family:inherit;}
-  .bigbtn:active{transform:translateY(3px);}
-
-  /* ドット絵電車キャラ */
-  .train-icon{image-rendering:pixelated;filter:drop-shadow(0 3px 2px #0006);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{--og:#ff7043;--ogd:#e64a19;--gn:#4caf50;--gnd:#2e7d32;--cr:#fff7e6;--br:#5d4037;}
+html,body{height:100%;overflow:hidden;
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  background:#cfe3ea;user-select:none;-webkit-user-select:none;}
+#app{display:flex;flex-direction:column;height:100dvh;}
+header{flex:0 0 auto;background:var(--og);color:#fff;padding:10px 14px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 3px 0 var(--ogd);z-index:500;}
+header b{font-size:17px;font-weight:800;display:block;}
+header span{font-size:10px;opacity:.92;}
+#coins{margin-left:auto;background:#fff;color:var(--og);border-radius:999px;
+  padding:5px 13px;font-weight:800;font-size:15px;box-shadow:0 2px 0 var(--ogd);white-space:nowrap;}
+#map{flex:1 1 auto;background:#cfe3ea;z-index:1;}
+.leaflet-container{font-family:inherit;background:#cfe3ea;}
+#viewBtn{position:absolute;top:64px;right:12px;z-index:600;background:#fff;
+  border:3px solid var(--og);color:var(--og);border-radius:12px;padding:8px 12px;
+  font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #0002;}
+#viewBtn:active{transform:translateY(2px);box-shadow:none;}
+#panel{flex:0 0 auto;background:#fff;border-top:4px solid #ffb74d;
+  padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px;z-index:500;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#fff3e0;color:var(--br);
+  border:2px solid #ffcc80;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;}
+.chip.line{border:none;color:#fff;}
+.controls{display:flex;gap:10px;}
+#roll{flex:1;background:var(--gn);color:#fff;border:none;border-radius:14px;font-size:19px;
+  font-weight:800;padding:15px 0;cursor:pointer;box-shadow:0 4px 0 var(--gnd);font-family:inherit;}
+#roll:disabled{background:#aaa;box-shadow:none;cursor:default;}
+#roll:active:not(:disabled){transform:translateY(4px);box-shadow:none;}
+#die{width:66px;background:#fffde7;border:3px solid #fbc02d;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:38px;}
+#die.shake{animation:shake .5s linear;}
+@keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}}
+.transfer .q{font-size:13px;font-weight:700;margin-bottom:6px;}
+.transfer .opts{display:flex;flex-wrap:wrap;gap:6px;}
+.tbtn{background:#fff;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:800;
+  cursor:pointer;font-family:inherit;border-width:3px;border-style:solid;}
+.tbtn:active{transform:scale(.97);}
+#legend{flex:0 0 auto;background:var(--br);display:flex;gap:8px;padding:5px 14px;flex-wrap:wrap;z-index:500;}
+#legend .item{display:flex;align-items:center;gap:4px;}
+#legend .bar{width:16px;height:5px;border-radius:3px;}
+#legend span{font-size:10px;color:#fff;}
+.overlay{position:fixed;inset:0;z-index:1000;background:#000a;display:none;
+  align-items:center;justify-content:center;padding:18px;}
+.overlay.show{display:flex;animation:fade .35s;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.card{background:#fff;border-radius:20px;padding:18px;max-width:360px;width:100%;
+  display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px #0006;}
+.card .stn{font-size:13px;color:var(--og);font-weight:800;}
+.card .fact-box{font-size:14px;line-height:1.7;background:#fff8e1;padding:12px;border-radius:12px;}
+.quiz-type{align-self:center;background:#e3f2fd;color:#1565c0;border-radius:999px;
+  padding:2px 12px;font-size:12px;font-weight:700;}
+.quiz-q{font-size:18px;font-weight:800;text-align:center;margin:6px 0;}
+.qopts{display:flex;flex-direction:column;gap:8px;}
+.qopt{background:#fff;border:3px solid #ffb74d;border-radius:12px;padding:12px;
+  font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;transition:transform .08s;}
+.qopt:active:not(:disabled){transform:scale(.97);}
+.qopt:disabled{cursor:default;}
+.result{text-align:center;font-size:16px;font-weight:800;margin-top:4px;}
+.bigbtn{color:#fff;border:none;border-radius:14px;padding:13px;font-size:16px;
+  font-weight:800;cursor:pointer;font-family:inherit;transition:transform .08s;}
+.bigbtn:active{transform:translateY(3px);}
+.train-wrap{position:absolute;pointer-events:none;z-index:900;}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <span style="font-size:24px">🚃</span>
-    <div class="title"><b>あいち でんしゃ すごろく</b><span>とよはし → めいてつぎふ をめざそう！</span></div>
+    <div><b>あいち でんしゃ すごろく</b><span>とよはし → めいてつぎふ をめざそう！</span></div>
     <div id="coins">🪙 0</div>
   </header>
   <div id="map"></div>
@@ -105,370 +86,323 @@
   </div>
   <div id="legend"></div>
 </div>
-
-<!-- 豆知識/クイズ -->
 <div class="overlay" id="ovPopup"><div class="card" id="popupCard"></div></div>
-<!-- 勝利 -->
 <div class="overlay" id="ovWin"><div class="card" style="text-align:center;align-items:center" id="winCard"></div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-/* ============================================================
-   設定：Google Mapsキー（あれば入れる。空ならOSMにフォールバック）
-   GitHub Pagesで使う場合、Google Cloudでこのキーに
-   「HTTPリファラ制限」をかけてください（自分のPages URLのみ許可）。
-   ============================================================ */
-const GOOGLE_MAPS_API_KEY = ""; // ← ここにキーを入れるとGoogle Mapsタイルになる
-
-/* ===================== 駅データ ===================== */
-const COORD = {
-  "豊橋":{lat:34.7626,lng:137.3818},"国府":{lat:34.8793,lng:137.2258},
-  "東岡崎":{lat:34.9543,lng:137.1761},"知立":{lat:35.0036,lng:137.0469},
-  "神宮前":{lat:35.1290,lng:136.9087},"金山":{lat:35.1430,lng:136.9006},
-  "名鉄名古屋":{lat:35.1701,lng:136.8817},"須ヶ口":{lat:35.1962,lng:136.8359},
-  "名鉄一宮":{lat:35.3041,lng:136.8027},"名鉄岐阜":{lat:35.4093,lng:136.7559},
-  "岡崎":{lat:34.9282,lng:137.1665},"刈谷":{lat:34.9893,lng:136.9912},
-  "名古屋":{lat:35.1709,lng:136.8815},"尾張一宮":{lat:35.3050,lng:136.8031},
-  "岐阜":{lat:35.4093,lng:136.7560},"鶴舞":{lat:35.1567,lng:136.9166},
-  "千種":{lat:35.1707,lng:136.9302},"大曽根":{lat:35.1909,lng:136.9377},
-  "勝川":{lat:35.2347,lng:136.9445},"高蔵寺":{lat:35.2545,lng:137.0420},
-  "伏見":{lat:35.1690,lng:136.8966},"栄":{lat:35.1709,lng:136.9080},
-  "本山":{lat:35.1568,lng:136.9659},"星ヶ丘":{lat:35.1597,lng:136.9890},
-  "藤が丘":{lat:35.1840,lng:137.0167},"市役所":{lat:35.1815,lng:136.9072},
+/* ======= DATA ======= */
+const STATIONS={"meitetsu":[{"name":"豊橋","lat":34.7626,"lng":137.3818,"fact":"愛知県の東のはしにある大きなまち。「ちくわ」が有名だよ。","quiz":{"type":"漢字","q":"「豊」の読みは？","a":["とよ","ゆた","ほう"],"c":0}},{"name":"船町","lat":34.7661,"lng":137.3692,"fact":null,"quiz":null},{"name":"下地","lat":34.772,"lng":137.3573,"fact":null,"quiz":null},{"name":"小坂井","lat":34.7897,"lng":137.3325,"fact":null,"quiz":null},{"name":"国府","lat":34.8793,"lng":137.2258,"fact":null,"quiz":null},{"name":"御油","lat":34.8666,"lng":137.2067,"fact":null,"quiz":null},{"name":"名電赤坂","lat":34.8612,"lng":137.1941,"fact":null,"quiz":null},{"name":"名電長沢","lat":34.886,"lng":137.1799,"fact":null,"quiz":null},{"name":"本宿","lat":34.902,"lng":137.1681,"fact":null,"quiz":null},{"name":"名電山中","lat":34.9157,"lng":137.1627,"fact":null,"quiz":null},{"name":"藤川","lat":34.9256,"lng":137.1541,"fact":null,"quiz":null},{"name":"美合","lat":34.9358,"lng":137.1468,"fact":null,"quiz":null},{"name":"男川","lat":34.9453,"lng":137.1562,"fact":null,"quiz":null},{"name":"東岡崎","lat":34.9543,"lng":137.1761,"fact":"岡崎は徳川家康(とくがわいえやす)が生まれたお城のまち。八丁みそも有名！","quiz":{"type":"漢字","q":"「東」はどの方角？","a":["ひがし","にし","みなみ"],"c":0}},{"name":"岡崎公園前","lat":34.9567,"lng":137.1703,"fact":null,"quiz":null},{"name":"矢作橋","lat":34.9637,"lng":137.1371,"fact":null,"quiz":null},{"name":"宇頭","lat":34.9778,"lng":137.1134,"fact":null,"quiz":null},{"name":"新安城","lat":34.9949,"lng":137.0833,"fact":null,"quiz":null},{"name":"今村","lat":35.0023,"lng":137.069,"fact":null,"quiz":null},{"name":"牛田","lat":35.002,"lng":137.0563,"fact":null,"quiz":null},{"name":"知立","lat":35.0036,"lng":137.0469,"fact":"「あんまき」というおかしが名物。三つの線がまじわる電車のまち。","quiz":{"type":"計算","q":"5 + 6 = ?","a":["10","11","12"],"c":1}},{"name":"一ツ木","lat":35.0178,"lng":137.015,"fact":null,"quiz":null},{"name":"富士松","lat":35.0406,"lng":136.9944,"fact":null,"quiz":null},{"name":"豊明","lat":35.0594,"lng":136.9788,"fact":null,"quiz":null},{"name":"前後","lat":35.0726,"lng":136.9692,"fact":null,"quiz":null},{"name":"中京競馬場前","lat":35.0849,"lng":136.96,"fact":null,"quiz":null},{"name":"有松","lat":35.0905,"lng":136.9596,"fact":null,"quiz":null},{"name":"左京山","lat":35.1004,"lng":136.9545,"fact":null,"quiz":null},{"name":"鳴海","lat":35.1084,"lng":136.947,"fact":null,"quiz":null},{"name":"本星崎","lat":35.1178,"lng":136.9367,"fact":null,"quiz":null},{"name":"本笠寺","lat":35.1244,"lng":136.9269,"fact":null,"quiz":null},{"name":"桜","lat":35.1289,"lng":136.9209,"fact":null,"quiz":null},{"name":"呼続","lat":35.131,"lng":136.9168,"fact":null,"quiz":null},{"name":"堀田","lat":35.1326,"lng":136.9131,"fact":null,"quiz":null},{"name":"神宮前","lat":35.129,"lng":136.9087,"fact":"すぐそばに「熱田神宮(あつたじんぐう)」があるよ。とても古い大きな神社なんだ。","quiz":{"type":"漢字","q":"「神」の読みは？","a":["かみ","かわ","もり"],"c":0}},{"name":"金山","lat":35.143,"lng":136.9006,"fact":"たくさんの電車がとまる「のりかえ駅」。JR・名鉄・地下鉄が集まるよ。","quiz":{"type":"計算","q":"8 + 7 = ?","a":["14","15","16"],"c":1}},{"name":"山王","lat":35.1556,"lng":136.8924,"fact":null,"quiz":null},{"name":"名鉄名古屋","lat":35.1701,"lng":136.8817,"fact":"名古屋は愛知県の県庁があるまち。名古屋城の金のしゃちほこが有名！","quiz":{"type":"地理","q":"愛知県の県庁があるのは？","a":["豊橋","名古屋","岡崎"],"c":1}},{"name":"栄生","lat":35.175,"lng":136.8718,"fact":null,"quiz":null},{"name":"東枇杷島","lat":35.1894,"lng":136.8606,"fact":null,"quiz":null},{"name":"西枇杷島","lat":35.1946,"lng":136.8502,"fact":null,"quiz":null},{"name":"二ツ杁","lat":35.1967,"lng":136.843,"fact":null,"quiz":null},{"name":"新川橋","lat":35.1985,"lng":136.8389,"fact":null,"quiz":null},{"name":"須ヶ口","lat":35.1962,"lng":136.8359,"fact":null,"quiz":null},{"name":"丸ノ内","lat":35.2099,"lng":136.8326,"fact":null,"quiz":null},{"name":"新清洲","lat":35.22,"lng":136.8283,"fact":null,"quiz":null},{"name":"大里","lat":35.2384,"lng":136.8213,"fact":null,"quiz":null},{"name":"奥田","lat":35.2598,"lng":136.8172,"fact":null,"quiz":null},{"name":"国府宮","lat":35.2765,"lng":136.8059,"fact":"「国府宮(こうのみや)」は有名なお祭り「はだか祭り」で知られるよ。","quiz":{"type":"計算","q":"12 - 5 = ?","a":["6","7","8"],"c":1}},{"name":"島氏永","lat":35.2878,"lng":136.8007,"fact":null,"quiz":null},{"name":"妙興寺","lat":35.2965,"lng":136.8,"fact":null,"quiz":null},{"name":"名鉄一宮","lat":35.3041,"lng":136.8027,"fact":"一宮は「せんい(ぬのを作ること)」のまち。七夕まつりも大きい！","quiz":{"type":"漢字","q":"「一」の次の数の漢字は？","a":["二","三","十"],"c":0}},{"name":"今伊勢","lat":35.3181,"lng":136.7985,"fact":null,"quiz":null},{"name":"石刀","lat":35.3293,"lng":136.7948,"fact":null,"quiz":null},{"name":"新木曽川","lat":35.3489,"lng":136.7953,"fact":null,"quiz":null},{"name":"木曽川堤","lat":35.3574,"lng":136.7867,"fact":null,"quiz":null},{"name":"黒田","lat":35.3677,"lng":136.7787,"fact":null,"quiz":null},{"name":"木曽川","lat":35.3733,"lng":136.7726,"fact":null,"quiz":null},{"name":"笠松","lat":35.3796,"lng":136.7763,"fact":null,"quiz":null},{"name":"岐南","lat":35.3891,"lng":136.7662,"fact":null,"quiz":null},{"name":"茶所","lat":35.401,"lng":136.76,"fact":null,"quiz":null},{"name":"加納","lat":35.4042,"lng":136.7567,"fact":null,"quiz":null},{"name":"名鉄岐阜","lat":35.4093,"lng":136.7559,"fact":"ゴール！岐阜はとなりの「岐阜県」。長良川の鵜飼(うかい)が有名だよ。","quiz":null}],"tokaido":[{"name":"豊橋","lat":34.7626,"lng":137.3818,"fact":"愛知県の東のはしにある大きなまち。「ちくわ」が有名だよ。","quiz":{"type":"漢字","q":"「豊」の読みは？","a":["とよ","ゆた","ほう"],"c":0}},{"name":"西小坂井","lat":34.7828,"lng":137.3439,"fact":null,"quiz":null},{"name":"愛知御津","lat":34.8028,"lng":137.31,"fact":null,"quiz":null},{"name":"三河大塚","lat":34.8174,"lng":137.2928,"fact":null,"quiz":null},{"name":"三河三谷","lat":34.8284,"lng":137.2643,"fact":null,"quiz":null},{"name":"蒲郡","lat":34.8274,"lng":137.2283,"fact":"蒲郡(がまごおり)はみかんとラグナシアという遊園地が有名だよ。","quiz":{"type":"地理","q":"蒲郡で有名な遊園地は？","a":["ラグナシア","ナガシマ","富士急"],"c":0}},{"name":"三河塩津","lat":34.8481,"lng":137.2058,"fact":null,"quiz":null},{"name":"三ヶ根","lat":34.8635,"lng":137.1826,"fact":null,"quiz":null},{"name":"幸田","lat":34.8878,"lng":137.1531,"fact":null,"quiz":null},{"name":"相見","lat":34.9107,"lng":137.1227,"fact":null,"quiz":null},{"name":"岡崎","lat":34.9282,"lng":137.1665,"fact":"徳川家康のふるさと。岡崎城が有名だよ。","quiz":{"type":"計算","q":"6 + 9 = ?","a":["14","15","16"],"c":1}},{"name":"西岡崎","lat":34.9444,"lng":137.1282,"fact":null,"quiz":null},{"name":"安城","lat":34.9587,"lng":137.0793,"fact":"安城は「農業の神様」といわれた田んぼのまち。","quiz":{"type":"漢字","q":"「安」の読みは？(あんしん)","a":["あん","けん","ぜん"],"c":0}},{"name":"三河安城","lat":34.9829,"lng":137.0504,"fact":null,"quiz":null},{"name":"刈谷","lat":34.9893,"lng":136.9912,"fact":"自動車の会社がたくさんある「ものづくりのまち」。","quiz":{"type":"計算","q":"17 - 9 = ?","a":["7","8","9"],"c":1}},{"name":"野田新町","lat":34.9956,"lng":136.9682,"fact":null,"quiz":null},{"name":"逢妻","lat":35.0134,"lng":136.9618,"fact":null,"quiz":null},{"name":"大府","lat":35.0049,"lng":136.968,"fact":null,"quiz":null},{"name":"共和","lat":35.0233,"lng":136.9682,"fact":null,"quiz":null},{"name":"南大高","lat":35.0429,"lng":136.9593,"fact":null,"quiz":null},{"name":"大高","lat":35.0569,"lng":136.9619,"fact":null,"quiz":null},{"name":"笠寺","lat":35.0989,"lng":136.9547,"fact":null,"quiz":null},{"name":"熱田","lat":35.1225,"lng":136.8987,"fact":"熱田神宮のすぐそばにある駅。あつた蓬莱軒のひつまぶしが有名！","quiz":{"type":"地理","q":"熱田にある有名な神社は？","a":["熱田神宮","伊勢神宮","住吉大社"],"c":0}},{"name":"金山","lat":35.143,"lng":136.9006,"fact":"たくさんの電車がとまる「のりかえ駅」。JR・名鉄・地下鉄が集まるよ。","quiz":{"type":"計算","q":"8 + 7 = ?","a":["14","15","16"],"c":1}},{"name":"尾頭橋","lat":35.1562,"lng":136.8939,"fact":null,"quiz":null},{"name":"名古屋","lat":35.1709,"lng":136.8815,"fact":"愛知県でいちばん大きいまち。名古屋城の金のしゃちほこが有名！","quiz":{"type":"地理","q":"名古屋城にある金の？","a":["とり","しゃちほこ","りゅう"],"c":1}},{"name":"枇杷島","lat":35.1924,"lng":136.8667,"fact":null,"quiz":null},{"name":"清洲","lat":35.22,"lng":136.843,"fact":null,"quiz":null},{"name":"稲沢","lat":35.247,"lng":136.799,"fact":null,"quiz":null},{"name":"尾張稲沢","lat":35.2634,"lng":136.7888,"fact":null,"quiz":null},{"name":"石刀","lat":35.3293,"lng":136.7948,"fact":null,"quiz":null},{"name":"新木曽川","lat":35.3489,"lng":136.7953,"fact":null,"quiz":null},{"name":"木曽川","lat":35.3733,"lng":136.7726,"fact":null,"quiz":null},{"name":"岐阜","lat":35.4093,"lng":136.756,"fact":null,"quiz":null}],"chuo":[{"name":"名古屋","lat":35.1709,"lng":136.8815,"fact":"愛知県でいちばん大きいまち。名古屋城の金のしゃちほこが有名！","quiz":{"type":"地理","q":"名古屋城にある金の？","a":["とり","しゃちほこ","りゅう"],"c":1}},{"name":"鶴舞","lat":35.1567,"lng":136.9166,"fact":null,"quiz":null},{"name":"千種","lat":35.1707,"lng":136.9302,"fact":null,"quiz":null},{"name":"大曽根","lat":35.1909,"lng":136.9377,"fact":"野球場「バンテリンドームナゴヤ」の近くにある駅。","quiz":{"type":"計算","q":"14 + 6 = ?","a":["19","20","21"],"c":1}},{"name":"新守山","lat":35.2091,"lng":136.9519,"fact":null,"quiz":null},{"name":"勝川","lat":35.2347,"lng":136.9445,"fact":null,"quiz":null},{"name":"神領","lat":35.2474,"lng":136.9538,"fact":null,"quiz":null},{"name":"春日井","lat":35.2546,"lng":136.97,"fact":null,"quiz":null},{"name":"朝倉","lat":35.2621,"lng":136.9883,"fact":null,"quiz":null},{"name":"古虎渓","lat":35.2762,"lng":137.0255,"fact":null,"quiz":null},{"name":"定光寺","lat":35.2713,"lng":137.0444,"fact":null,"quiz":null},{"name":"高蔵寺","lat":35.2545,"lng":137.042,"fact":"大きな団地(だんち)があるまち。ここからリニモに乗り換えられるよ。","quiz":{"type":"漢字","q":"「高」の読みは？","a":["たか","ひく","なが"],"c":0}}],"higashiyama":[{"name":"高畑","lat":35.1626,"lng":136.8481,"fact":"東山線の西のおわり駅。","quiz":{"type":"計算","q":"20 - 12 = ?","a":["7","8","9"],"c":1}},{"name":"八田","lat":35.1651,"lng":136.8601,"fact":null,"quiz":null},{"name":"岩塚","lat":35.1673,"lng":136.8693,"fact":null,"quiz":null},{"name":"中村公園","lat":35.1683,"lng":136.8754,"fact":null,"quiz":null},{"name":"中村日赤","lat":35.1689,"lng":136.8795,"fact":null,"quiz":null},{"name":"本陣","lat":35.1697,"lng":136.8814,"fact":null,"quiz":null},{"name":"亀島","lat":35.1701,"lng":136.8839,"fact":null,"quiz":null},{"name":"名古屋","lat":35.1718,"lng":136.883,"fact":"愛知県でいちばん大きいまち。名古屋城の金のしゃちほこが有名！","quiz":{"type":"地理","q":"名古屋城にある金の？","a":["とり","しゃちほこ","りゅう"],"c":1}},{"name":"伏見","lat":35.169,"lng":136.8966,"fact":"科学館の近く。世界一大きなプラネタリウムがあるよ！","quiz":{"type":"地理","q":"伏見にある大きな科学館は？","a":["でんきの科学館","名古屋市科学館","愛知県科学館"],"c":1}},{"name":"栄","lat":35.1709,"lng":136.908,"fact":"名古屋でいちばんにぎやかなまち。テレビとうがあるよ。","quiz":{"type":"漢字","q":"「栄える」の読みは？","a":["さかえる","はえる","もえる"],"c":0}},{"name":"新栄町","lat":35.168,"lng":136.9175,"fact":null,"quiz":null},{"name":"千種","lat":35.17,"lng":136.9305,"fact":null,"quiz":null},{"name":"今池","lat":35.1635,"lng":136.9358,"fact":null,"quiz":null},{"name":"池下","lat":35.1601,"lng":136.9441,"fact":null,"quiz":null},{"name":"覚王山","lat":35.1577,"lng":136.9549,"fact":null,"quiz":null},{"name":"本山","lat":35.1568,"lng":136.9659,"fact":"東山線と名城線がのりかえできる駅。","quiz":{"type":"漢字","q":"「本」の読みは？(ほんを読む)","a":["ほん","もと","き"],"c":0}},{"name":"東山公園","lat":35.1582,"lng":136.9789,"fact":null,"quiz":null},{"name":"星ヶ丘","lat":35.1597,"lng":136.989,"fact":"おしゃれなお店がたくさん。「ひがしやまどうぶつえん」にも近い！","quiz":{"type":"漢字","q":"夜空にひかるのは？","a":["星","石","水"],"c":0}},{"name":"一社","lat":35.1671,"lng":137.002,"fact":null,"quiz":null},{"name":"上社","lat":35.1731,"lng":137.0182,"fact":null,"quiz":null},{"name":"本郷","lat":35.1812,"lng":137.0398,"fact":null,"quiz":null},{"name":"藤が丘","lat":35.184,"lng":137.0167,"fact":"東山線のいちばん東のおわり駅。リニモの乗換駅でもあるよ。","quiz":{"type":"計算","q":"15 + 5 = ?","a":["19","20","21"],"c":1}}],"meijo":[{"name":"金山","lat":35.1432,"lng":136.9008,"fact":"たくさんの電車がとまる「のりかえ駅」。JR・名鉄・地下鉄が集まるよ。","quiz":{"type":"計算","q":"8 + 7 = ?","a":["14","15","16"],"c":1}},{"name":"東別院","lat":35.1533,"lng":136.9027,"fact":null,"quiz":null},{"name":"上前津","lat":35.1594,"lng":136.9044,"fact":null,"quiz":null},{"name":"矢場町","lat":35.1633,"lng":136.9059,"fact":null,"quiz":null},{"name":"栄","lat":35.1711,"lng":136.9082,"fact":"名古屋でいちばんにぎやかなまち。テレビとうがあるよ。","quiz":{"type":"漢字","q":"「栄える」の読みは？","a":["さかえる","はえる","もえる"],"c":0}},{"name":"久屋大通","lat":35.1743,"lng":136.9083,"fact":null,"quiz":null},{"name":"市役所","lat":35.1815,"lng":136.9072,"fact":"名古屋城のいちばん近くの駅！","quiz":{"type":"地理","q":"名古屋城がある駅は？","a":["栄","市役所","金山"],"c":1}},{"name":"名城公園","lat":35.188,"lng":136.9014,"fact":null,"quiz":null},{"name":"黒川","lat":35.1912,"lng":136.8967,"fact":null,"quiz":null},{"name":"志賀本通","lat":35.1976,"lng":136.8955,"fact":null,"quiz":null},{"name":"平安通","lat":35.2007,"lng":136.9024,"fact":null,"quiz":null},{"name":"ナゴヤドーム前矢田","lat":35.1992,"lng":136.923,"fact":null,"quiz":null},{"name":"大曽根","lat":35.1911,"lng":136.9379,"fact":"野球場「バンテリンドームナゴヤ」の近くにある駅。","quiz":{"type":"計算","q":"14 + 6 = ?","a":["19","20","21"],"c":1}},{"name":"砂田橋","lat":35.1883,"lng":136.95,"fact":null,"quiz":null},{"name":"茶屋ヶ坂","lat":35.1841,"lng":136.959,"fact":null,"quiz":null},{"name":"高針","lat":35.1753,"lng":136.9782,"fact":null,"quiz":null},{"name":"本山","lat":35.157,"lng":136.9661,"fact":"東山線と名城線がのりかえできる駅。","quiz":{"type":"漢字","q":"「本」の読みは？(ほんを読む)","a":["ほん","もと","き"],"c":0}},{"name":"自由ヶ丘","lat":35.1549,"lng":136.978,"fact":null,"quiz":null},{"name":"星ヶ丘","lat":35.1598,"lng":136.9891,"fact":"おしゃれなお店がたくさん。「ひがしやまどうぶつえん」にも近い！","quiz":{"type":"漢字","q":"夜空にひかるのは？","a":["星","石","水"],"c":0}},{"name":"東山公園","lat":35.1582,"lng":136.9789,"fact":null,"quiz":null},{"name":"一社","lat":35.1671,"lng":137.002,"fact":null,"quiz":null},{"name":"上社","lat":35.1731,"lng":137.0182,"fact":null,"quiz":null},{"name":"本郷","lat":35.1812,"lng":137.0398,"fact":null,"quiz":null},{"name":"藤が丘","lat":35.184,"lng":137.0167,"fact":"東山線のいちばん東のおわり駅。リニモの乗換駅でもあるよ。","quiz":{"type":"計算","q":"15 + 5 = ?","a":["19","20","21"],"c":1}},{"name":"八草","lat":35.1917,"lng":137.064,"fact":"リニモ(磁気で浮く電車)の乗換駅。万博で有名になったよ。","quiz":{"type":"地理","q":"リニモは何で浮いて走る？","a":["空気","磁石","水"],"c":1}}]};
+const TRANSFERS={"meitetsu:35":[{"line":"tokaido","idx":23},{"line":"meijo","idx":0}],"tokaido:23":[{"line":"meitetsu","idx":35},{"line":"meijo","idx":0}],"meijo:0":[{"line":"meitetsu","idx":35},{"line":"tokaido","idx":23}],"meitetsu:37":[{"line":"tokaido","idx":25},{"line":"higashiyama","idx":7}],"tokaido:25":[{"line":"meitetsu","idx":37},{"line":"higashiyama","idx":7},{"line":"chuo","idx":0}],"higashiyama:7":[{"line":"meitetsu","idx":37},{"line":"tokaido","idx":25},{"line":"chuo","idx":0}],"chuo:0":[{"line":"tokaido","idx":25},{"line":"higashiyama","idx":7}],"meitetsu:34":[{"line":"tokaido","idx":22}],"tokaido:22":[{"line":"meitetsu","idx":34}],"meitetsu:30":[{"line":"tokaido","idx":21}],"tokaido:21":[{"line":"meitetsu","idx":30}],"higashiyama:9":[{"line":"meijo","idx":4}],"meijo:4":[{"line":"higashiyama","idx":9}],"higashiyama:11":[{"line":"chuo","idx":2}],"chuo:2":[{"line":"higashiyama","idx":11}],"chuo:3":[{"line":"meijo","idx":12}],"meijo:12":[{"line":"chuo","idx":3}],"higashiyama:15":[{"line":"meijo","idx":16}],"meijo:16":[{"line":"higashiyama","idx":15}],"higashiyama:17":[{"line":"meijo","idx":18}],"meijo:18":[{"line":"higashiyama","idx":17}],"higashiyama:16":[{"line":"meijo","idx":19}],"meijo:19":[{"line":"higashiyama","idx":16}],"higashiyama:18":[{"line":"meijo","idx":20}],"meijo:20":[{"line":"higashiyama","idx":18}],"higashiyama:19":[{"line":"meijo","idx":21}],"meijo:21":[{"line":"higashiyama","idx":19}],"higashiyama:20":[{"line":"meijo","idx":22}],"meijo:22":[{"line":"higashiyama","idx":20}],"higashiyama:21":[{"line":"meijo","idx":23}],"meijo:23":[{"line":"higashiyama","idx":21}],"meitetsu:53":[{"line":"tokaido","idx":30}],"tokaido:30":[{"line":"meitetsu","idx":53}],"meitetsu:54":[{"line":"tokaido","idx":31}],"tokaido:31":[{"line":"meitetsu","idx":54}],"meitetsu:57":[{"line":"tokaido","idx":32}],"tokaido:32":[{"line":"meitetsu","idx":57}],"meitetsu:62":[{"line":"tokaido","idx":33}],"tokaido:33":[{"line":"meitetsu","idx":62}],"meitetsu:48":[{"line":"tokaido","idx":29}],"tokaido:29":[{"line":"meitetsu","idx":48}]};
+const LINE_META={
+  meitetsu:{name:"名鉄名古屋本線",short:"名鉄",color:"#e3342f"},
+  tokaido:{name:"JR東海道本線",short:"JR東海道",color:"#f59e0b"},
+  chuo:{name:"JR中央本線",short:"中央線",color:"#2563eb"},
+  higashiyama:{name:"地下鉄東山線",short:"東山線",color:"#eab308"},
+  meijo:{name:"地下鉄名城線",short:"名城線",color:"#9333ea"},
 };
-
-const LINES = {
-  meitetsu:{name:"名鉄名古屋本線",short:"名鉄",color:"#e3342f",stations:[
-    {name:"豊橋",yomi:"とよはし",fact:"豊橋は「ちくわ」が有名だよ。ヤマサちくわは江戸時代からつづくお店なんだ。",
-      quiz:{type:"漢字",q:"「豊」の読みは？",a:["とよ","ゆた","ほう"],c:0}},
-    {name:"国府",yomi:"こう",fact:"むかし「役所(やくしょ)」があった場所。だから「国府」というよ。",
-      quiz:{type:"計算",q:"3 + 4 = ?",a:["6","7","8"],c:1}},
-    {name:"東岡崎",yomi:"ひがしおかざき",fact:"岡崎は徳川家康(とくがわいえやす)が生まれたお城のまち。八丁みそも有名！",
-      quiz:{type:"漢字",q:"「東」はどの方角？",a:["ひがし","にし","みなみ"],c:0}},
-    {name:"知立",yomi:"ちりゅう",fact:"「あんまき」というおかしが名物。三つの線がまじわる電車のまち。",
-      quiz:{type:"計算",q:"5 + 6 = ?",a:["10","11","12"],c:1}},
-    {name:"神宮前",yomi:"じんぐうまえ",fact:"すぐそばに「熱田神宮(あつたじんぐう)」があるよ。とても古い神社なんだ。",
-      quiz:{type:"漢字",q:"「神」の読みは？(神さま)",a:["かみ","かわ","もり"],c:0}},
-    {name:"金山",yomi:"かなやま",fact:"金山はたくさんの電車がとまる「のりかえ駅」。JR・名鉄・地下鉄が集まるよ。",
-      quiz:{type:"計算",q:"8 + 7 = ?",a:["14","15","16"],c:1}},
-    {name:"名鉄名古屋",yomi:"めいてつなごや",fact:"名古屋は愛知県の県庁があるまち。名古屋城の金のしゃちほこが有名！",
-      quiz:{type:"地理",q:"愛知県の県庁があるのは？",a:["豊橋","名古屋","岡崎"],c:1}},
-    {name:"須ヶ口",yomi:"すかぐち",fact:"ここから「津島線(つしません)」という別の線も出ているよ。",
-      quiz:{type:"計算",q:"12 - 5 = ?",a:["6","7","8"],c:1}},
-    {name:"名鉄一宮",yomi:"めいてついちのみや",fact:"一宮は「せんい(ぬのを作ること)」のまち。七夕まつりも大きい！",
-      quiz:{type:"漢字",q:"「一」の次の数の漢字は？",a:["二","三","十"],c:0}},
-    {name:"名鉄岐阜",yomi:"めいてつぎふ",fact:"ゴール！岐阜はとなりの「岐阜県」。長良川(ながらがわ)の鵜飼(うかい)が有名。",
-      quiz:null},
-  ]},
-  tokaido:{name:"JR東海道本線",short:"JR東海道",color:"#f59e0b",stations:[
-    {name:"岡崎",yomi:"おかざき",fact:"徳川家康のふるさと。",quiz:{type:"計算",q:"6 + 9 = ?",a:["14","15","16"],c:1}},
-    {name:"刈谷",yomi:"かりや",fact:"自動車の会社がたくさんあるまち。",quiz:{type:"漢字",q:"「谷」の読みは？",a:["たに","やま","かわ"],c:0}},
-    {name:"金山",yomi:"かなやま",fact:"大きなのりかえ駅。",quiz:{type:"計算",q:"10 + 10 = ?",a:["20","21","22"],c:0}},
-    {name:"名古屋",yomi:"なごや",fact:"愛知県でいちばん大きいまち。",quiz:{type:"地理",q:"名古屋城にある金の？",a:["とり","しゃちほこ","りゅう"],c:1}},
-    {name:"尾張一宮",yomi:"おわりいちのみや",fact:"むかしの国「尾張」がついた駅。",quiz:{type:"計算",q:"9 + 8 = ?",a:["16","17","18"],c:1}},
-    {name:"岐阜",yomi:"ぎふ",fact:"となりの岐阜県の駅。",quiz:{type:"地理",q:"「岐阜」は何県？",a:["愛知県","岐阜県","三重県"],c:1}},
-  ]},
-  chuo:{name:"JR中央本線",short:"中央線",color:"#2563eb",stations:[
-    {name:"名古屋",yomi:"なごや",fact:"中央線のスタート駅。",quiz:{type:"計算",q:"7 + 7 = ?",a:["13","14","15"],c:1}},
-    {name:"鶴舞",yomi:"つるまい",fact:"大きな「鶴舞公園」があるよ。",quiz:{type:"漢字",q:"「鶴」はどんな鳥？",a:["細くて白い鳥","黒いカラス","すずめ"],c:0}},
-    {name:"千種",yomi:"ちくさ",fact:"東山線にものりかえできる駅。",quiz:{type:"計算",q:"千は数字でいくつ？",a:["100","1000","10000"],c:1}},
-    {name:"大曽根",yomi:"おおぞね",fact:"リニア・鉄道館の近く。電車がいっぱい！",quiz:{type:"漢字",q:"「大」の反対は？",a:["小","中","高"],c:0}},
-    {name:"勝川",yomi:"かちがわ",fact:"春日井市(かすがいし)にある駅。",quiz:{type:"計算",q:"13 + 4 = ?",a:["16","17","18"],c:1}},
-    {name:"高蔵寺",yomi:"こうぞうじ",fact:"大きな団地(だんち)があるまち。",quiz:{type:"漢字",q:"「高」の読みは？(せがたかい)",a:["たか","ひく","なが"],c:0}},
-  ]},
-  higashiyama:{name:"地下鉄東山線",short:"東山線",color:"#eab308",stations:[
-    {name:"名古屋",yomi:"なごや",fact:"黄色い地下鉄のスタート。",quiz:{type:"計算",q:"11 + 11 = ?",a:["21","22","23"],c:1}},
-    {name:"伏見",yomi:"ふしみ",fact:"科学館の近く。プラネタリウムが有名！",quiz:{type:"地理",q:"星を見る丸い建物は？",a:["びじゅつかん","プラネタリウム","としょかん"],c:1}},
-    {name:"栄",yomi:"さかえ",fact:"名古屋でいちばんにぎやかなまち。テレビとうがあるよ。",quiz:{type:"漢字",q:"「栄える」の読みは？",a:["さかえる","はえる","もえる"],c:0}},
-    {name:"千種",yomi:"ちくさ",fact:"中央線にものりかえできる。",quiz:{type:"計算",q:"20 - 8 = ?",a:["11","12","13"],c:1}},
-    {name:"本山",yomi:"もとやま",fact:"名城線にものりかえできる駅。",quiz:{type:"漢字",q:"「本」の読みは？(ほんを読む)",a:["ほん","もと","き"],c:0}},
-    {name:"星ヶ丘",yomi:"ほしがおか",fact:"おしゃれなお店がたくさん。",quiz:{type:"漢字",q:"夜空にひかるのは？",a:["星","石","水"],c:0}},
-    {name:"藤が丘",yomi:"ふじがおか",fact:"東山線のいちばん東のおわり駅。",quiz:{type:"計算",q:"15 + 5 = ?",a:["19","20","21"],c:1}},
-  ]},
-  meijo:{name:"地下鉄名城線",short:"名城線",color:"#9333ea",stations:[
-    {name:"金山",yomi:"かなやま",fact:"むらさきの地下鉄。ぐるっと回る線だよ。",quiz:{type:"計算",q:"14 + 6 = ?",a:["19","20","21"],c:1}},
-    {name:"栄",yomi:"さかえ",fact:"東山線にのりかえできるにぎやかな駅。",quiz:{type:"地理",q:"テレビとうがある駅は？",a:["栄","金山","本山"],c:0}},
-    {name:"市役所",yomi:"しやくしょ",fact:"名古屋城のいちばん近くの駅！",quiz:{type:"地理",q:"名古屋城がある駅は？",a:["栄","市役所","金山"],c:1}},
-    {name:"大曽根",yomi:"おおぞね",fact:"中央線にものりかえできる。",quiz:{type:"計算",q:"18 - 9 = ?",a:["8","9","10"],c:1}},
-    {name:"本山",yomi:"もとやま",fact:"東山線にものりかえできる駅。",quiz:{type:"漢字",q:"「山」の読みは？",a:["やま","かわ","うみ"],c:0}},
-  ]},
-};
-
-const TRANSFERS = {
-  "meitetsu:5":[{line:"tokaido",idx:2},{line:"meijo",idx:0}],
-  "meitetsu:6":[{line:"tokaido",idx:3},{line:"chuo",idx:0},{line:"higashiyama",idx:0}],
-  "tokaido:2":[{line:"meitetsu",idx:5},{line:"meijo",idx:0}],
-  "tokaido:3":[{line:"meitetsu",idx:6},{line:"chuo",idx:0},{line:"higashiyama",idx:0}],
-  "chuo:0":[{line:"tokaido",idx:3},{line:"higashiyama",idx:0}],
-  "chuo:2":[{line:"higashiyama",idx:3}],
-  "chuo:3":[{line:"meijo",idx:3}],
-  "higashiyama:0":[{line:"tokaido",idx:3},{line:"meitetsu",idx:6}],
-  "higashiyama:2":[{line:"meijo",idx:1}],
-  "higashiyama:3":[{line:"chuo",idx:2}],
-  "higashiyama:4":[{line:"meijo",idx:4}],
-  "meijo:0":[{line:"meitetsu",idx:5},{line:"tokaido",idx:2}],
-  "meijo:1":[{line:"higashiyama",idx:2}],
-  "meijo:3":[{line:"chuo",idx:3}],
-  "meijo:4":[{line:"higashiyama",idx:4}],
-};
-
+const GOAL_LINE="meitetsu", GOAL_IDX=62;
 const DICE=["","⚀","⚁","⚂","⚃","⚄","⚅"];
-const GOAL_LINE="meitetsu", GOAL_IDX=9;
+const GOOGLE_MAPS_API_KEY=""; // ← キーを入れるとGoogle Mapsになる
 
-/* ============ ドット絵電車を描く ============ */
-function makeTrainIcon(color){
-  // 16x12 ドット絵。スケール4倍 → 64x48
-  const art=[
-    "0000000000000000",
-    "0033333333333300",
-    "0311111111111130",
-    "3111111111111113",
-    "3122112211221113",
-    "3122112211221143",
-    "3111111111111113",
-    "3166666666666613",
-    "3111111111111113",
-    "3111111111111113",
-    "0350000000000530",
-    "0055000000005500",
-  ];
-  const dark = shade(color,-40), light = shade(color,35);
-  const palette={
-    "0":null, "1":color, "2":"#bfe9ff", "3":dark, "4":"#fff7b0", "5":"#444", "6":light
-  };
-  const S=4, W=16*S, H=12*S;
-  const cv=document.createElement("canvas"); cv.width=W; cv.height=H;
-  const ctx=cv.getContext("2d");
-  art.forEach((row,y)=>{
-    [...row].forEach((ch,x)=>{
-      const col=palette[ch]; if(!col) return;
-      ctx.fillStyle=col; ctx.fillRect(x*S,y*S,S,S);
-    });
-  });
-  return cv.toDataURL();
-}
+/* ======= ドット絵電車 ======= */
+const ART=[
+  "0000000000000000","0033333333333300","0311111111111130","3111111111111113",
+  "3122112211221113","3122112211221143","3111111111111113","3166666666666613",
+  "3111111111111113","3111111111111113","0350000000000530","0055000000005500",
+];
 function shade(hex,amt){
   let c=hex.replace("#","");
-  if(c.length===3)c=c.split("").map(x=>x+x).join("");
-  let r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
-  r=Math.max(0,Math.min(255,r+amt));g=Math.max(0,Math.min(255,g+amt));b=Math.max(0,Math.min(255,b+amt));
-  return "#"+[r,g,b].map(v=>v.toString(16).padStart(2,"0")).join("");
+  if(c.length===3)c=[...c].map(x=>x+x).join("");
+  return "#"+[0,2,4].map(i=>Math.max(0,Math.min(255,parseInt(c.slice(i,i+2),16)+amt))
+    .toString(16).padStart(2,"0")).join("");
+}
+function makeTrainDataURL(color){
+  const dark=shade(color,-40),light=shade(color,35);
+  const pal={"0":null,"1":color,"2":"#bfe9ff","3":dark,"4":"#fff7b0","5":"#444","6":light};
+  const S=4,cv=document.createElement("canvas");
+  cv.width=16*S;cv.height=12*S;
+  const ctx=cv.getContext("2d");
+  ART.forEach((row,y)=>[...row].forEach((ch,x)=>{
+    const col=pal[ch];if(!col)return;
+    ctx.fillStyle=col;ctx.fillRect(x*S,y*S,S,S);
+  }));
+  return cv.toDataURL();
 }
 
-/* ============ Leaflet 地図 ============ */
-const map=L.map('map',{zoomControl:true,attributionControl:true,zoomSnap:.25}).setView([35.17,136.91],12);
-
-let tileLayer;
+/* ======= 地図初期化 ======= */
+const map=L.map("map",{zoomControl:true,zoomSnap:.25}).setView([35.17,136.93],11);
 if(GOOGLE_MAPS_API_KEY){
-  // Google Maps タイル（要キー・リファラ制限推奨）
-  tileLayer=L.tileLayer(
-    `https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`,
-    {maxZoom:20,subdomains:[],attribution:'&copy; Google'}
-  );
-} else {
-  // OSM カラー地図（キー不要）
-  tileLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19,attribution:'&copy; OpenStreetMap'});
+  L.tileLayer(`https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&key=${GOOGLE_MAPS_API_KEY}`,
+    {maxZoom:20,attribution:"&copy; Google"}).addTo(map);
+}else{
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(map);
 }
-tileLayer.addTo(map);
 
-/* 路線ポリライン */
-for(const line of Object.values(LINES)){
-  const pts=line.stations.map(s=>[COORD[s.name].lat,COORD[s.name].lng]);
-  L.polyline(pts,{color:line.color,weight:6,opacity:.85,lineJoin:"round",lineCap:"round"}).addTo(map);
+/* 路線ライン */
+for(const[lid,meta]of Object.entries(LINE_META)){
+  const pts=STATIONS[lid].map(s=>[s.lat,s.lng]);
+  L.polyline(pts,{color:meta.color,weight:5,opacity:.85,lineJoin:"round",lineCap:"round"}).addTo(map);
 }
+
 /* 駅マーカー */
-const allLatLngs=[];
-for(const [lid,line] of Object.entries(LINES)){
-  line.stations.forEach((s,i)=>{
-    const ll=[COORD[s.name].lat,COORD[s.name].lng]; allLatLngs.push(ll);
-    const goal=lid===GOAL_LINE&&i===GOAL_IDX;
-    const tr=!!TRANSFERS[`${lid}:${i}`];
-    const size=goal?20:tr?15:11;
-    const html=goal
-      ? `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#f5c518;border:3px solid #fff;box-shadow:0 0 8px #f5c518;display:flex;align-items:center;justify-content:center;font-size:11px">⛩</div>`
-      : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${line.color};border:2px solid #fff;box-shadow:0 1px 3px #0006"></div>`;
-    L.marker(ll,{icon:L.divIcon({className:'',html,iconSize:[size,size],iconAnchor:[size/2,size/2]}),interactive:false}).addTo(map);
-    L.marker(ll,{icon:L.divIcon({className:'',
-      html:`<div style="font-size:10px;font-weight:800;color:#1a1410;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff">${s.name}</div>`,
-      iconAnchor:[-(size/2)-2,6]}),interactive:false}).addTo(map);
+const allLL=[];
+const stnMarkers={};
+for(const[lid,stns]of Object.entries(STATIONS)){
+  const color=LINE_META[lid].color;
+  stns.forEach((s,i)=>{
+    const ll=[s.lat,s.lng]; allLL.push(ll);
+    const isGoal=lid===GOAL_LINE&&i===GOAL_IDX;
+    const isTr=!!TRANSFERS[`${lid}:${i}`];
+    const sz=isGoal?18:isTr?12:8;
+    const dot=isGoal
+      ?`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:#f5c518;border:3px solid #fff;box-shadow:0 0 8px #f5c518aa"></div>`
+      :`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 3px #0005"></div>`;
+    const m=L.marker(ll,{icon:L.divIcon({className:"",html:dot,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]}),interactive:false}).addTo(map);
+    if(!stnMarkers[`${lid}:${i}`])stnMarkers[`${lid}:${i}`]=[];
+    stnMarkers[`${lid}:${i}`].push(m);
+    // ラベル（乗換駅・ゴールのみ）
+    if(isGoal||isTr){
+      L.marker(ll,{icon:L.divIcon({className:"",
+        html:`<div style="font-size:9px;font-weight:800;color:#1a1410;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff">${s.name}</div>`,
+        iconAnchor:[-(sz/2)-2,4]}),interactive:false}).addTo(map);
+    }
   });
 }
-const allBounds=L.latLngBounds(allLatLngs);
+const allBounds=L.latLngBounds(allLL);
 
-/* プレイヤー（ドット絵電車） */
-let cur={line:"meitetsu",idx:0};
-let trainMarker;
-function placeTrain(){
-  const s=LINES[cur.line].stations[cur.idx];
-  const ll=[COORD[s.name].lat,COORD[s.name].lng];
-  const url=makeTrainIcon(LINES[cur.line].color);
-  const icon=L.divIcon({className:'',
-    html:`<img src="${url}" class="train-icon" width="56" height="42" style="transform:translate(-50%,-100%)">`,
+/* ======= 電車マーカー（アニメーション付き） ======= */
+let trainMarker=null;
+let curTrainDataURL=null;
+
+function getTrainIcon(color){
+  const url=makeTrainDataURL(color);
+  curTrainDataURL=url;
+  return L.divIcon({className:"",
+    html:`<img src="${url}" width="56" height="42" style="image-rendering:pixelated;filter:drop-shadow(0 3px 2px #0006);transform:translate(-50%,-100%)">`,
     iconSize:[56,42],iconAnchor:[28,42]});
-  if(trainMarker) trainMarker.setLatLng(ll), trainMarker.setIcon(icon);
-  else trainMarker=L.marker(ll,{icon,zIndexOffset:1000}).addTo(map);
 }
 
-/* ビュー制御 */
-let followMode=true;
-function focusPlayer(animate=true){
-  const s=LINES[cur.line].stations[cur.idx];
-  map.setView([COORD[s.name].lat,COORD[s.name].lng], 14, {animate});
+function placeTrain(lat,lng,color){
+  const ll=[lat,lng];
+  const icon=getTrainIcon(color);
+  if(trainMarker){trainMarker.setLatLng(ll);trainMarker.setIcon(icon);}
+  else{trainMarker=L.marker(ll,{icon,zIndexOffset:1000,interactive:false}).addTo(map);}
 }
-document.getElementById('viewBtn').addEventListener('click',()=>{
-  followMode=!followMode;
-  const btn=document.getElementById('viewBtn');
-  if(followMode){btn.textContent="🔍 ぜんたいを みる";focusPlayer();}
-  else{btn.textContent="🚃 じぶんに よる";map.fitBounds(allBounds,{padding:[40,40]});}
-});
 
-/* ============ ゲーム状態・UI ============ */
+/* 駅間アニメーション移動 */
+function animateTrain(fromLL,toLL,color,durationMs,onDone){
+  const steps=30;
+  const dlat=(toLL[0]-fromLL[0])/steps;
+  const dlng=(toLL[1]-fromLL[1])/steps;
+  let step=0;
+  const iv=setInterval(()=>{
+    step++;
+    const lat=fromLL[0]+dlat*step;
+    const lng=fromLL[1]+dlng*step;
+    if(trainMarker) trainMarker.setLatLng([lat,lng]);
+    if(followMode) map.panTo([lat,lng],{animate:false});
+    if(step>=steps){clearInterval(iv);onDone();}
+  },durationMs/steps);
+}
+
+/* ======= ゲーム状態 ======= */
+let cur={line:"meitetsu",idx:0};
 let visited=new Set(["meitetsu:0"]);
-let coins=0, phase="roll", pendingTransfers=[], stepCount=0, quizAnswered=false;
+let coins=0,phase="roll",pendingTransfers=[],stepCount=0,quizAnswered=false;
+let followMode=true;
 const $=id=>document.getElementById(id);
 
+function curS(){return STATIONS[cur.line][cur.idx];}
 function isGoal(c){return c.line===GOAL_LINE&&c.idx===GOAL_IDX;}
-function curStn(){return LINES[cur.line].stations[cur.idx];}
 
-function renderChips(){
-  const line=LINES[cur.line];
-  const remain=cur.line==="meitetsu"?(GOAL_IDX-cur.idx)+"駅":"のりかえてね";
-  $('chips').innerHTML=
-    `<span class="chip line" style="background:${line.color}">${line.short}</span>`+
-    `<span class="chip">いま：<b>${curStn().name}</b></span>`+
-    `<span class="chip">ゴールまで <b>${remain}</b></span>`;
+/* ビュー切替 */
+const viewBtn=$("viewBtn");
+viewBtn.addEventListener("click",()=>{
+  followMode=!followMode;
+  if(followMode){viewBtn.textContent="🔍 ぜんたいを みる";focusPlayer(true);}
+  else{viewBtn.textContent="🚃 じぶんに よる";map.fitBounds(allBounds,{padding:[40,40]});}
+});
+function focusPlayer(animate){
+  const s=curS();
+  map.setView([s.lat,s.lng],14,{animate:!!animate});
 }
-function renderRoll(){
-  $('action').innerHTML=
-    `<div class="controls">
-      <button id="roll">🎲 サイコロを ふる！</button>
-      <div id="die">${phase==="anim"?"🎲":"🎲"}</div>
-    </div>`;
-  $('roll').onclick=rollDice;
-  $('roll').disabled = phase!=="roll";
+
+/* ======= UI描画 ======= */
+function renderChips(){
+  const meta=LINE_META[cur.line];
+  const s=curS();
+  const remain=cur.line==="meitetsu"?(GOAL_IDX-cur.idx)+"駅":"のりかえてね";
+  $("chips").innerHTML=
+    `<span class="chip line" style="background:${meta.color}">${meta.short}</span>`+
+    `<span class="chip">いま：<b>${s.name}</b></span>`+
+    `<span class="chip">ゴールまで <b>${remain}</b></span>`;
+  $("coins").textContent="🪙 "+coins;
+}
+function renderRoll(disabled){
+  $("action").innerHTML=
+    `<div class="controls"><button id="roll" ${disabled?"disabled":""}>🎲 サイコロを ふる！</button><div id="die">🎲</div></div>`;
+  $("roll").onclick=rollDice;
 }
 function renderTransfer(){
-  const line=LINES[cur.line];
-  let opts=`<button class="tbtn" style="border-color:${line.color};color:${line.color}" onclick="window.__stay()">このまま ${line.short}</button>`;
+  const meta=LINE_META[cur.line];
+  let opts=`<button class="tbtn" style="border-color:${meta.color};color:${meta.color}" onclick="_stay()">このまま ${meta.short}</button>`;
   pendingTransfers.forEach((t,i)=>{
-    const c=LINES[t.line].color;
-    opts+=`<button class="tbtn" style="border-color:${c};color:${c}" onclick="window.__transfer(${i})">${LINES[t.line].short}に のりかえ</button>`;
+    const c=LINE_META[t.line].color;
+    const nm=LINE_META[t.line].short;
+    opts+=`<button class="tbtn" style="border-color:${c};color:${c}" onclick="_tr(${i})">${nm}に のりかえ</button>`;
   });
-  $('action').innerHTML=`<div class="transfer"><div class="q">🔁 のりかえ駅！ どのでんしゃに のる？</div><div class="opts">${opts}</div></div>`;
+  $("action").innerHTML=`<div class="transfer"><div class="q">🔁 のりかえ駅！どの でんしゃに のる？</div><div class="opts">${opts}</div></div>`;
 }
 
+/* ======= サイコロ ======= */
 function rollDice(){
   if(phase!=="roll")return;
-  phase="anim"; renderRoll();
-  const die=$('die'); die.classList.add('shake');
+  phase="anim"; renderRoll(true);
+  const die=$("die"); die.classList.add("shake");
   let n=0;
   const iv=setInterval(()=>{
     const r=Math.floor(Math.random()*6)+1; die.textContent=DICE[r];
     if(++n>9){
-      clearInterval(iv); die.classList.remove('shake');
+      clearInterval(iv); die.classList.remove("shake");
       const f=Math.floor(Math.random()*6)+1; die.textContent=DICE[f];
       stepCount=f;
-      setTimeout(()=>step(),350);
+      setTimeout(doStep,300);
     }
   },65);
 }
 
-function step(){
-  const line=LINES[cur.line];
+/* ======= 移動 ======= */
+function doStep(){
+  const line=STATIONS[cur.line];
   let ni=cur.idx+1;
-  if(ni>=line.stations.length) ni=cur.idx-1;
-  if(ni<0){phase="roll";renderRoll();return;}
-  cur={line:cur.line,idx:ni};
-  visited.add(`${cur.line}:${cur.idx}`);
-  placeTrain();
-  if(followMode) focusPlayer();
-  renderChips();
+  if(ni>=line.length) ni=cur.idx-1;
+  if(ni<0){phase="roll";renderRoll(false);return;}
+
+  const fromS=curS();
+  const nc={line:cur.line,idx:ni};
+  const toS=STATIONS[nc.line][nc.idx];
+  const color=LINE_META[cur.line].color;
   stepCount--;
 
-  if(isGoal(cur)){setTimeout(showWin,500);return;}
-  if(stepCount<=0){
-    setTimeout(()=>showFact(),480);
-  }else{
-    setTimeout(()=>step(),450);
-  }
+  // アニメーション移動
+  animateTrain([fromS.lat,fromS.lng],[toS.lat,toS.lng],color,420,()=>{
+    cur=nc;
+    visited.add(`${cur.line}:${cur.idx}`);
+    placeTrain(toS.lat,toS.lng,color);
+    renderChips();
+
+    if(isGoal(cur)){setTimeout(showWin,400);return;}
+
+    if(stepCount<=0){
+      // 止まった：fact/quizがあれば表示、なければ乗換チェック
+      if(toS.fact){
+        phase="popup"; setTimeout(showFact,200);
+      } else {
+        checkTransfer();
+      }
+    } else {
+      // まだ進む：乗換駅でも一時停止
+      const key=`${cur.line}:${cur.idx}`;
+      if(TRANSFERS[key]){
+        phase="popup"; setTimeout(showFact,200);// 乗換駅でも豆知識チェック
+        // 残りステップ保持して乗換後に継続
+      } else {
+        setTimeout(doStep,120);
+      }
+    }
+  });
 }
 
-/* 豆知識 → クイズ */
+/* ======= 豆知識 / クイズ ======= */
 function showFact(){
-  phase="popup";
-  const s=curStn();
-  $('popupCard').innerHTML=
-    `<div class="stn">📍 ${s.name}（${s.yomi}）</div>
-     <div style="font-size:40px;text-align:center;margin:4px 0">🚉</div>
-     <div class="fact">💡 ${s.fact}</div>
-     <button class="bigbtn" style="background:var(--green);box-shadow:0 4px 0 var(--green-d)" onclick="window.__afterFact()">${s.quiz?"クイズに ちょうせん！ ▶":"つぎへ ▶"}</button>`;
-  $('ovPopup').classList.add('show');
+  const s=curS();
+  $("popupCard").innerHTML=
+    `<div class="stn">📍 ${s.name}</div>`+
+    (s.fact?`<div style="font-size:36px;text-align:center">🚉</div><div class="fact-box">💡 ${s.fact}</div>`:`<div style="text-align:center;font-size:14px">⬇️ のりかえ駅です</div>`)+
+    `<button class="bigbtn" style="background:var(--gn);box-shadow:0 4px 0 var(--gnd)" onclick="_afterFact()">${s.quiz?"クイズに ちょうせん！ ▶":"つぎへ ▶"}</button>`;
+  $("ovPopup").classList.add("show");
 }
-window.__afterFact=function(){
-  const s=curStn();
-  if(s.quiz){showQuiz();}else{closePopupThenNext();}
-};
+function _afterFact(){
+  const s=curS();
+  if(s.quiz){showQuiz();}else{closePopup();}
+}
 function showQuiz(){
   quizAnswered=false;
-  const q=curStn().quiz;
-  let opts="";
-  q.a.forEach((o,i)=>{opts+=`<button class="qopt" onclick="window.__answer(${i})">${o}</button>`;});
-  $('popupCard').innerHTML=
-    `<div class="stn">📍 ${curStn().name}</div>
-     <div class="quiz-type">${q.type}クイズ</div>
-     <div class="quiz-q">${q.q}</div>
-     <div class="qopts" id="qopts">${opts}</div>
-     <div id="qresult"></div>`;
+  const q=curS().quiz;
+  const opts=q.a.map((o,i)=>`<button class="qopt" onclick="_ans(${i})">${o}</button>`).join("");
+  $("popupCard").innerHTML=
+    `<div class="stn">📍 ${curS().name}</div>`+
+    `<div class="quiz-type">${q.type}クイズ</div>`+
+    `<div class="quiz-q">${q.q}</div>`+
+    `<div class="qopts" id="qopts">${opts}</div>`+
+    `<div id="qresult"></div>`;
 }
-window.__answer=function(i){
+function _ans(i){
   if(quizAnswered)return; quizAnswered=true;
-  const q=curStn().quiz;
-  const btns=document.querySelectorAll('#qopts .qopt');
-  btns.forEach((b,bi)=>{
+  const q=curS().quiz;
+  document.querySelectorAll("#qopts .qopt").forEach((b,bi)=>{
     b.disabled=true;
     if(bi===q.c){b.style.background="#c8e6c9";b.style.borderColor="#4caf50";}
     else if(bi===i){b.style.background="#ffcdd2";b.style.borderColor="#e53935";}
   });
   const ok=i===q.c;
-  if(ok){coins++;$('coins').textContent="🪙 "+coins;}
-  $('qresult').innerHTML=
-    `<div class="result" style="color:${ok?'#2e7d32':'#c62828'};margin-top:6px">${ok?"🎉 せいかい！ コイン +1":"ざんねん… また がんばろう！"}</div>
-     <button class="bigbtn" style="background:var(--orange);box-shadow:0 4px 0 var(--orange-d);margin-top:8px" onclick="window.__closePopup()">つぎへ ▶</button>`;
-};
-window.__closePopup=closePopupThenNext;
-function closePopupThenNext(){
-  $('ovPopup').classList.remove('show');
+  if(ok){coins++;$("coins").textContent="🪙 "+coins;}
+  $("qresult").innerHTML=
+    `<div class="result" style="color:${ok?"#2e7d32":"#c62828"}">${ok?"🎉 せいかい！ コイン +1":"ざんねん… また がんばろう！"}</div>`+
+    `<button class="bigbtn" style="background:var(--og);box-shadow:0 4px 0 var(--ogd);margin-top:8px" onclick="_closePopup()">つぎへ ▶</button>`;
+}
+function closePopup(){
+  $("ovPopup").classList.remove("show");
+  checkTransfer();
+}
+window._afterFact=_afterFact; window._ans=_ans; window._closePopup=closePopup;
+function checkTransfer(){
   const key=`${cur.line}:${cur.idx}`;
-  if(TRANSFERS[key]){pendingTransfers=TRANSFERS[key];phase="transfer";renderTransfer();}
-  else{phase="roll";renderRoll();}
+  if(TRANSFERS[key]&&stepCount<=0){
+    pendingTransfers=TRANSFERS[key]; phase="transfer"; renderTransfer();
+  } else if(stepCount>0){
+    phase="anim"; setTimeout(doStep,150);
+  } else {
+    phase="roll"; renderRoll(false);
+  }
 }
-
-window.__stay=function(){phase="roll";renderRoll();};
-window.__transfer=function(i){
+function _stay(){phase="roll";renderRoll(false);}
+function _tr(i){
   const t=pendingTransfers[i];
+  const fromS=curS();
   cur={line:t.line,idx:t.idx};
-  visited.add(`${t.line}:${t.idx}`);
-  placeTrain(); if(followMode)focusPlayer(); renderChips();
-  if(isGoal(cur)){showWin();return;}
-  phase="roll"; renderRoll();
-};
+  const toS=STATIONS[cur.line][cur.idx];
+  visited.add(`${cur.line}:${cur.idx}`);
+  const color=LINE_META[cur.line].color;
+  animateTrain([fromS.lat,fromS.lng],[toS.lat,toS.lng],color,300,()=>{
+    placeTrain(toS.lat,toS.lng,color);
+    renderChips();
+    if(isGoal(cur)){showWin();return;}
+    phase="roll"; renderRoll(false);
+  });
+}
+window._stay=_stay; window._tr=_tr;
 
+/* ======= 勝利 ======= */
 function showWin(){
-  $('winCard').innerHTML=
-    `<div style="font-size:64px">⛩🎉</div>
-     <div style="font-size:26px;font-weight:900;color:var(--orange)">ゴール！</div>
-     <div style="font-size:15px;line-height:1.7"><b>めいてつぎふ</b> に とうちゃく！<br>あつめたコイン 🪙 <b>${coins}</b>こ！</div>
-     <button class="bigbtn" style="background:var(--green);box-shadow:0 4px 0 var(--green-d)" onclick="location.reload()">もういちど あそぶ 🔄</button>`;
-  $('ovWin').classList.add('show');
+  $("winCard").innerHTML=
+    `<div style="font-size:64px">⛩🎉</div>`+
+    `<div style="font-size:26px;font-weight:900;color:var(--og)">ゴール！</div>`+
+    `<div style="font-size:15px;line-height:1.7"><b>めいてつぎふ</b> に とうちゃく！<br>あつめたコイン 🪙 <b>${coins}</b>こ！</div>`+
+    `<button class="bigbtn" style="background:var(--gn);box-shadow:0 4px 0 var(--gnd)" onclick="location.reload()">もういちど あそぶ 🔄</button>`;
+  $("ovWin").classList.add("show");
 }
 
-/* 凡例 */
-$('legend').innerHTML=Object.values(LINES).map(l=>
-  `<div class="item"><div class="bar" style="background:${l.color}"></div><span>${l.short}</span></div>`).join("");
+/* ======= 凡例 ======= */
+$("legend").innerHTML=Object.values(LINE_META).map(m=>
+  `<div class="item"><div class="bar" style="background:${m.color}"></div><span>${m.short}</span></div>`).join("");
 
-/* 初期化 */
-placeTrain(); renderChips(); renderRoll();
+/* ======= 初期化 ======= */
+const s0=curS();
+placeTrain(s0.lat,s0.lng,LINE_META[cur.line].color);
+renderChips(); renderRoll(false);
 setTimeout(()=>focusPlayer(false),300);
 </script>
 </body>
