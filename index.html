@@ -597,7 +597,13 @@ function _go(argJson){
     turnHistory.pop();
   } else {
     stepCount--;            // 前進（乗換経由も1駅進めば消費）
-    turnHistory.push({line:cur.line,idx:cur.idx});
+    // 乗換経由の場合は「乗換駅」を履歴に積む
+    // → 目的駅から「戻る」矢印で乗換駅に戻ったとき回復できるように
+    if(isTransfer && via){
+      turnHistory.push({line:via.line, idx:via.idx});
+    } else {
+      turnHistory.push({line:cur.line, idx:cur.idx});
+    }
   }
 
   phase="anim";
