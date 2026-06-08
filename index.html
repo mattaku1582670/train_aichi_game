@@ -40,67 +40,38 @@ header span{font-size:10px;opacity:.92;}
 #die.shake{animation:shake .5s linear;}
 @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}}
 
-/* ===== 3Dサイコロ演出 ===== */
+/* ===== SVGサイコロ演出 ===== */
 #diceStage{
   position:fixed;inset:0;z-index:2000;display:none;
   align-items:center;justify-content:center;flex-direction:column;
-  background:radial-gradient(circle at 50% 45%,rgba(0,0,0,0.35),rgba(0,0,0,0.6));
-  perspective:900px;pointer-events:none;
+  background:radial-gradient(circle at 50% 45%,rgba(0,0,0,0.3),rgba(0,0,0,0.55));
+  pointer-events:none;
 }
 #diceStage.show{display:flex;}
-#dice3d{
-  position:relative;width:90px;height:90px;
-  transform-style:preserve-3d;
-  transform:rotateX(0deg) rotateY(0deg);
+#diceBox{
+  width:120px;height:120px;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,0.45));
 }
-#dice3d.rolling{animation:diceTumble 1.15s cubic-bezier(.32,.06,.2,1) forwards;}
-#dice3d .face{
-  position:absolute;width:90px;height:90px;
-  background:linear-gradient(145deg,#fffef7,#ffe7a8);
-  border:3px solid #e8a900;border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:inset 0 0 14px rgba(232,169,0,0.25);
-  backface-visibility:hidden;
+#diceBox.rolling{animation:diceWobble .9s cubic-bezier(.36,.07,.3,1) forwards;}
+@keyframes diceWobble{
+  0%{transform:translateY(-120px) scale(.7) rotate(-18deg);opacity:0;}
+  18%{transform:translateY(0) scale(1.05) rotate(10deg);opacity:1;}
+  32%{transform:translateY(-32px) scale(.98) rotate(-8deg);}
+  48%{transform:translateY(0) scale(1.02) rotate(6deg);}
+  64%{transform:translateY(-14px) scale(1) rotate(-4deg);}
+  80%{transform:translateY(0) scale(1) rotate(2deg);}
+  100%{transform:translateY(0) scale(1) rotate(0);}
 }
-#dice3d .face span{font-size:62px;line-height:1;color:#c0392b;filter:saturate(1.2);}
-.f1{transform:rotateY(0deg) translateZ(45px);}
-.f6{transform:rotateY(180deg) translateZ(45px);}
-.f3{transform:rotateY(90deg) translateZ(45px);}
-.f4{transform:rotateY(-90deg) translateZ(45px);}
-.f5{transform:rotateX(90deg) translateZ(45px);}
-.f2{transform:rotateX(-90deg) translateZ(45px);}
-@keyframes diceTumble{
-  0%{transform:translateY(-160px) rotateX(0) rotateY(0) scale(.6);}
-  15%{transform:translateY(-40px) rotateX(220deg) rotateY(180deg) scale(1);}
-  30%{transform:translateY(20px) rotateX(450deg) rotateY(360deg) scale(1);}
-  45%{transform:translateY(-60px) rotateX(680deg) rotateY(540deg) scale(1);}
-  60%{transform:translateY(15px) rotateX(900deg) rotateY(720deg) scale(1);}
-  75%{transform:translateY(-25px) rotateX(1080deg) rotateY(860deg) scale(1);}
-  88%{transform:translateY(8px) rotateX(1170deg) rotateY(940deg) scale(1);}
-  100%{transform:translateY(0) rotateX(var(--rx)) rotateY(var(--ry)) scale(1);}
-}
-#diceShadow{
-  position:absolute;top:calc(50% + 70px);left:50%;transform:translateX(-50%);
-  width:80px;height:18px;border-radius:50%;
-  background:rgba(0,0,0,0.4);filter:blur(6px);
-  animation:none;
-}
-#dice3d.rolling ~ #diceShadow{animation:shadowPulse 1.15s ease-in-out;}
-@keyframes shadowPulse{
-  0%{transform:translateX(-50%) scaleX(.4);opacity:.2;}
-  30%{transform:translateX(-50%) scaleX(1.1);opacity:.5;}
-  60%{transform:translateX(-50%) scaleX(.7);opacity:.35;}
-  100%{transform:translateX(-50%) scaleX(1);opacity:.45;}
-}
+#diceBox svg{width:100%;height:100%;display:block;}
 #diceResult{
-  margin-top:34px;font-size:30px;font-weight:900;color:#fff;
+  margin-top:30px;font-size:32px;font-weight:900;color:#fff;
   text-shadow:0 2px 12px rgba(0,0,0,0.6);opacity:0;
   font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
 }
 #diceResult.show{animation:resultPop .5s cubic-bezier(.2,1.5,.4,1) forwards;}
 @keyframes resultPop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
-#diceStage.landed{animation:stageShake .35s ease-out;}
-@keyframes stageShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,4px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-2px)}}
+#diceStage.landed #diceBox{animation:diceLand .35s ease-out;}
+@keyframes diceLand{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,3px) scale(1.06)}50%{transform:translate(4px,-2px) scale(.97)}75%{transform:translate(-3px,1px)}}
 .transfer .q{font-size:13px;font-weight:700;margin-bottom:6px;}
 .transfer .opts{display:flex;flex-wrap:wrap;gap:6px;}
 .move-head{font-size:14px;font-weight:700;text-align:center;padding:6px 0;}
@@ -180,17 +151,9 @@ header span{font-size:10px;opacity:.92;}
 </div>
 <div class="overlay" id="ovPopup"><div class="card" id="popupCard"></div></div>
 <div class="overlay" id="ovWin"><div class="card" style="text-align:center;align-items:center" id="winCard"></div></div>
-<!-- 3Dサイコロ演出 -->
+<!-- SVGサイコロ演出 -->
 <div id="diceStage">
-  <div id="diceShadow"></div>
-  <div id="dice3d">
-    <div class="face f1"><span>⚀</span></div>
-    <div class="face f2"><span>⚁</span></div>
-    <div class="face f3"><span>⚂</span></div>
-    <div class="face f4"><span>⚃</span></div>
-    <div class="face f5"><span>⚄</span></div>
-    <div class="face f6"><span>⚅</span></div>
-  </div>
+  <div id="diceBox"></div>
   <div id="diceResult"></div>
 </div>
 
@@ -350,58 +313,77 @@ function renderRoll(disabled){
   $("roll").onclick=rollDice;
 }
 
-/* ======= サイコロ ======= */
-// 出目→最終回転角（その面を正面に向ける・数学的に検証済み）
-const DICE_ROT={
-  1:[ -12, -12],
-  2:[  72,   0],
-  3:[   0, -78],
-  4:[   0,  72],
-  5:[ -72,   0],
-  6:[-168,   0],
+/* ======= サイコロ（SVG） ======= */
+// 目のピップ配置（3x3グリッド上の座標）
+const PIP_POS={
+  1:[[1,1]],
+  2:[[0,0],[2,2]],
+  3:[[0,0],[1,1],[2,2]],
+  4:[[0,0],[2,0],[0,2],[2,2]],
+  5:[[0,0],[2,0],[1,1],[0,2],[2,2]],
+  6:[[0,0],[2,0],[0,1],[2,1],[0,2],[2,2]],
 };
+function diceSVG(n){
+  const S=120, pad=24, gap=(S-pad*2)/2, r=11;
+  let pips="";
+  (PIP_POS[n]||[]).forEach(([cx,cy])=>{
+    pips+=`<circle cx="${pad+cx*gap}" cy="${pad+cy*gap}" r="${r}" fill="#c0392b"/>`;
+  });
+  return `<svg viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffef7"/><stop offset="1" stop-color="#ffe7a8"/>
+    </linearGradient></defs>
+    <rect x="3" y="3" width="${S-6}" height="${S-6}" rx="22" fill="url(#dg)" stroke="#e8a900" stroke-width="4"/>
+    ${pips}
+  </svg>`;
+}
+
 function rollDice(){
   if(phase!=="roll")return;
   phase="anim"; renderRoll(true);
 
-  const f=Math.floor(Math.random()*6)+1;
-  const stage=$("diceStage"), d3=$("dice3d"), res=$("diceResult");
+  const f=Math.floor(Math.random()*6)+1; // 確定した出目＝移動マス数
+  const stage=$("diceStage"), box=$("diceBox"), res=$("diceResult");
 
   // リセット
-  d3.classList.remove("rolling");
+  box.classList.remove("rolling");
   stage.classList.remove("landed");
   res.classList.remove("show"); res.textContent="";
-  void d3.offsetWidth; // reflowでアニメ再start可能に
-
-  // 最終角に追加回転を足して何周も回す（keyframe末尾より大きくして正方向で着地）
-  const [bx,by]=DICE_ROT[f];
-  const rx=bx+1260;
-  const ry=by+1080;
-  d3.style.setProperty("--rx", rx+"deg");
-  d3.style.setProperty("--ry", ry+"deg");
 
   stage.classList.add("show");
-  // 軽いサイコロ音（WebAudio・カラカラ音）
   playDiceSound();
-  d3.classList.add("rolling");
 
-  // 着地（アニメ1.15s）
-  setTimeout(()=>{
-    stage.classList.add("landed");
-    res.textContent=`🎲 ${f}！`;
-    res.classList.add("show");
-    playLandSound();
-  },1150);
+  // 目がパラパラ変わるランダム演出
+  let ticks=0;
+  const totalTicks=14;
+  const iv=setInterval(()=>{
+    ticks++;
+    // だんだん遅くなる演出のため、後半は表示更新間隔をあけたいが
+    // setIntervalは固定なので、最後の数回は確定値寄りに
+    const shown=(ticks>=totalTicks-1)?f:(Math.floor(Math.random()*6)+1);
+    box.innerHTML=diceSVG(shown);
+    if(ticks>=totalTicks){
+      clearInterval(iv);
+      box.innerHTML=diceSVG(f);   // 確定値を必ず表示
+      stage.classList.add("landed");
+      res.textContent=`🎲 ${f}！`;
+      res.classList.add("show");
+      playLandSound();
+      // 演出終了→移動フェーズ
+      setTimeout(()=>{
+        stage.classList.remove("show","landed");
+        stepCount=f;
+        turnHistory=[];
+        phase="move";
+        renderMovePanel();
+        setTimeout(showNavMarkers,250);
+      },750);
+    }
+  },70);
 
-  // 演出終了→移動フェーズへ
-  setTimeout(()=>{
-    stage.classList.remove("show","landed");
-    stepCount=f;
-    turnHistory=[];
-    phase="move";
-    renderMovePanel();
-    setTimeout(showNavMarkers,250);
-  },1900);
+  // 初回描画＋落下アニメ
+  box.innerHTML=diceSVG(Math.floor(Math.random()*6)+1);
+  box.classList.add("rolling");
 }
 
 /* ===== サイコロ効果音（WebAudio・外部ファイル不要） ===== */
@@ -605,19 +587,18 @@ function _go(argJson){
   const nc={line:lineId,idx};
   const toS=STATIONS[nc.line][nc.idx];
 
-  // 戻り判定（桃鉄方式）
-  const isBack=!isTransfer&&turnHistory.length>0&&
+  // 戻り判定（桃鉄方式）：直前にいた駅へ戻る場合はマス回復
+  const isBack=turnHistory.length>0&&
     turnHistory[turnHistory.length-1].line===nc.line&&
     turnHistory[turnHistory.length-1].idx===nc.idx;
 
   if(isBack){
-    stepCount++;
+    stepCount++;            // 戻り→回復
     turnHistory.pop();
-  } else if(!isTransfer){
-    stepCount--;
+  } else {
+    stepCount--;            // 前進（乗換経由も1駅進めば消費）
     turnHistory.push({line:cur.line,idx:cur.idx});
   }
-  // isTransfer=trueの場合はstep消費なし（乗換は無料）
 
   phase="anim";
 
