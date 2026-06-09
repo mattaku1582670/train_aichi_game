@@ -349,7 +349,23 @@ function focusPlayer(animate){
 function renderChips(){
   const meta=LINE_META[cur.line];
   const s=curS();
-  const remain=cur.line==="meitetsu"?(GOAL_IDX-cur.idx)+"駅":"のりかえてね";
+  // ゴールまでの残り駅数を計算
+  let remain;
+  if(cur.line===GOAL_LINE){
+    // 同一路線：インデックス差（環状線はmin距離）
+    const isLoop=LOOP_LINES.includes(cur.line);
+    const lineLen=STATIONS[cur.line].length;
+    if(isLoop){
+      const d1=Math.abs(GOAL_IDX-cur.idx);
+      remain=Math.min(d1,lineLen-d1)+"駅";
+    } else {
+      remain=Math.abs(GOAL_IDX-cur.idx)+"駅";
+    }
+  } else {
+    // 異路線：乗換が必要。ゴール駅名を示す
+    const gs=STATIONS[GOAL_LINE][GOAL_IDX];
+    remain=`のりかえ →${gs.name}`;
+  }
   $("chips").innerHTML=
     `<span class="chip line" style="background:${meta.color}">${meta.short}</span>`+
     `<span class="chip">いま：<b>${s.name}</b></span>`+
