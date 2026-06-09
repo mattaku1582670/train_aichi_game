@@ -138,7 +138,7 @@ header span{font-size:10px;opacity:.92;}
 <div id="app">
   <header>
     <span style="font-size:24px">🚃</span>
-    <div><b>あいち でんしゃ すごろく</b><span>とよはし → めいてつぎふ をめざそう！</span></div>
+    <div><b>あいち でんしゃ すごろく</b><span>やまぐち → めいてつぎふ をめざそう！</span></div>
     <div id="coins">🪙 0</div>
   </header>
   <div id="map"></div>
@@ -273,8 +273,8 @@ function animateTrain(fromLL,toLL,color,durationMs,onDone){
 }
 
 /* ======= ゲーム状態 ======= */
-let cur={line:"meitetsu",idx:0};
-let visited=new Set(["meitetsu:0"]);
+let cur={line:"aikan",idx:18};
+let visited=new Set(["aikan:18"]);
 let coins=0,phase="roll",stepCount=0,quizAnswered=false;
 let followMode=true;
 const $=id=>document.getElementById(id);
