@@ -329,7 +329,14 @@ let followMode=true;
 const $=id=>document.getElementById(id);
 
 function curS(){return STATIONS[cur.line][cur.idx];}
-function isGoal(c){return c.line===GOAL_LINE&&c.idx===GOAL_IDX;}
+function isGoal(c){
+  // 完全一致
+  if(c.line===GOAL_LINE&&c.idx===GOAL_IDX) return true;
+  // ゴール駅の乗換先にいる場合も「徒歩でゴール」とみなす
+  const key=`${GOAL_LINE}:${GOAL_IDX}`;
+  const tr=TRANSFERS[key]||[];
+  return tr.some(t=>t.line===c.line&&t.idx===c.idx);
+}
 
 /* ビュー切替 */
 const viewBtn=$("viewBtn");
@@ -857,10 +864,15 @@ function showRouletteResult(chosen){
 /* ======= 勝利 ======= */
 function showWin(){
   const goalStn=STATIONS[GOAL_LINE][GOAL_IDX];
+  const isExact=cur.line===GOAL_LINE&&cur.idx===GOAL_IDX;
+  const curStnName=STATIONS[cur.line][cur.idx].name;
+  const arrivalMsg=isExact
+    ?`<b>${goalStn.name}</b> に とうちゃく！`
+    :`<b>${curStnName}</b> から 🚶 徒歩で<br><b>${goalStn.name}</b> に とうちゃく！`;
   $("winCard").innerHTML=
     `<div style="font-size:64px">🎯🎉</div>`+
     `<div style="font-size:26px;font-weight:900;color:var(--og)">ゴール！</div>`+
-    `<div style="font-size:15px;line-height:1.7"><b>${goalStn.name}</b> に とうちゃく！<br>あつめたコイン 🪙 <b>${coins}</b>こ！</div>`+
+    `<div style="font-size:15px;line-height:1.7">${arrivalMsg}<br>あつめたコイン 🪙 <b>${coins}</b>こ！</div>`+
     `<button class="bigbtn" style="background:var(--gn);box-shadow:0 4px 0 var(--gnd);margin-top:8px" id="nextGoalBtn">つぎの えきを きめる 🎯</button>`;
   $("ovWin").classList.add("show");
   document.getElementById("nextGoalBtn").onclick=()=>{
