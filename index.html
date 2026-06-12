@@ -381,38 +381,58 @@ function updateGoalMarker(){
 }
 
 /* ======= 電車マーカー（アニメーション付き） ======= */
-let trainMarker=null;
-let curTrainDataURL=null;
+// 電車div：Leaflet外のCSS絶対配置（setLatLngによるDOM再構築を排除）
+let trainDiv=null;
+let curTrainURL=null;
 
-function getTrainIcon(color){
-  const url=makeTrainDataURL(color);
-  curTrainDataURL=url;
-  return L.divIcon({className:"",
-    html:`<img src="${url}" width="56" height="42" style="image-rendering:pixelated;filter:drop-shadow(0 3px 2px #0006);display:block;">`,
-    iconSize:[56,42],iconAnchor:[28,42]});
+function ensureTrainDiv(){
+  if(trainDiv) return;
+  trainDiv=document.createElement("div");
+  trainDiv.style.cssText="position:absolute;z-index:1000;pointer-events:none;"+
+    "width:56px;height:42px;margin-left:-28px;margin-top:-42px;"+
+    "will-change:transform;";
+  trainDiv.innerHTML='<img width="56" height="42" style="image-rendering:pixelated;'+
+    'filter:drop-shadow(3px 3px 0 rgba(58,46,42,.8));display:block;">';
+  document.getElementById("map").appendChild(trainDiv);
+}
+
+function setTrainPos(lat,lng){
+  if(!trainDiv) return;
+  const pt=map.latLngToContainerPoint([lat,lng]);
+  trainDiv.style.left=pt.x+"px";
+  trainDiv.style.top=pt.y+"px";
 }
 
 function placeTrain(lat,lng,color){
-  const ll=[lat,lng];
-  const icon=getTrainIcon(color);
-  if(trainMarker){trainMarker.setLatLng(ll);trainMarker.setIcon(icon);}
-  else{trainMarker=L.marker(ll,{icon,zIndexOffset:1000,interactive:false}).addTo(map);}
+  ensureTrainDiv();
+  const url=makeTrainDataURL(color);
+  if(url!==curTrainURL){
+    trainDiv.querySelector("img").src=url;
+    curTrainURL=url;
+  }
+  setTrainPos(lat,lng);
 }
 
-/* 駅間アニメーション移動 */
+/* 駅間アニメーション移動（rAFベース・setInterval廃止） */
 function animateTrain(fromLL,toLL,color,durationMs,onDone){
-  const steps=30;
-  const dlat=(toLL[0]-fromLL[0])/steps;
-  const dlng=(toLL[1]-fromLL[1])/steps;
-  let step=0;
-  const iv=setInterval(()=>{
-    step++;
-    const lat=fromLL[0]+dlat*step;
-    const lng=fromLL[1]+dlng*step;
-    if(trainMarker) trainMarker.setLatLng([lat,lng]);
+  ensureTrainDiv();
+  const url=makeTrainDataURL(color);
+  if(url!==curTrainURL){
+    trainDiv.querySelector("img").src=url;
+    curTrainURL=url;
+  }
+  let start=null;
+  function step(ts){
+    if(!start) start=ts;
+    const t=Math.min((ts-start)/durationMs,1);
+    const lat=fromLL[0]+(toLL[0]-fromLL[0])*t;
+    const lng=fromLL[1]+(toLL[1]-fromLL[1])*t;
+    setTrainPos(lat,lng);
     if(followMode) map.panTo([lat,lng],{animate:false});
-    if(step>=steps){clearInterval(iv);onDone();}
-  },durationMs/steps);
+    if(t<1) requestAnimationFrame(step);
+    else onDone();
+  }
+  requestAnimationFrame(step);
 }
 
 /* ======= ゲーム状態 ======= */
@@ -1035,13 +1055,21 @@ async function initGame(){
   setTimeout(()=>focusPlayer(false),300);
   // 地図移動・ズーム後に矢印を再配置（rAFでデバウンス）
 let _navRaf=null;
+map.on("move zoom",()=>{
+  // パン中もリアルタイムで電車位置を追従
+  const cs=curS();
+  setTrainPos(cs.lat,cs.lng);
+  if(phase==="move"){
+    const pt=map.latLngToContainerPoint([cs.lat,cs.lng]);
+    pulseDiv.style.left=pt.x+"px";
+    pulseDiv.style.top=pt.y+"px";
+  }
+});
 map.on("moveend zoomend",()=>{
   if(phase!=="move") return;
   if(_navRaf) cancelAnimationFrame(_navRaf);
   _navRaf=requestAnimationFrame(()=>{
     _navRaf=null;
-    const cs=curS();
-    updatePulse(cs.lat,cs.lng,LINE_META[cur.line].color);
     showNavMarkers();
   });
 });
