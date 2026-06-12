@@ -5,76 +5,127 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 <title>あいち でんしゃ すごろく</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-:root{--og:#ff7043;--ogd:#e64a19;--gn:#4caf50;--gnd:#2e7d32;--cr:#fff7e6;--br:#5d4037;}
+:root{
+  --ink:#3a2e2a;          /* 縁取り・文字 */
+  --sky:#7ec8e3;          /* 空 */
+  --sun:#ffd93d;          /* 太陽イエロー */
+  --red:#ff5a5f;          /* 電車レッド */
+  --grass:#6bcb77;        /* 草グリーン */
+  --grassd:#3f9d4c;
+  --cream:#fff9ec;        /* クリーム */
+  --paper:#fffdf6;
+  --og:#ff8a3d;--ogd:#e96a1b;--gn:var(--grass);--gnd:var(--grassd);
+  --hard:4px 4px 0 var(--ink);          /* ハードシャドウ */
+  --hard-sm:3px 3px 0 var(--ink);
+}
 html,body{height:100%;overflow:hidden;
   font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
-  background:#cfe3ea;user-select:none;-webkit-user-select:none;}
+  background:var(--sky);user-select:none;-webkit-user-select:none;color:var(--ink);}
 #app{display:flex;flex-direction:column;height:100dvh;}
-header{flex:0 0 auto;background:var(--og);color:#fff;padding:10px 14px;
-  display:flex;align-items:center;gap:10px;box-shadow:0 3px 0 var(--ogd);z-index:500;}
-header b{font-size:17px;font-weight:800;display:block;}
-header span{font-size:10px;opacity:.92;}
-#coins{margin-left:auto;background:#fff;color:var(--og);border-radius:999px;
-  padding:5px 13px;font-weight:800;font-size:15px;box-shadow:0 2px 0 var(--ogd);white-space:nowrap;}
-#map{flex:1 1 auto;background:#cfe3ea;z-index:1;}
-.leaflet-container{font-family:inherit;background:#cfe3ea;}
-#viewBtn{position:absolute;top:64px;right:12px;z-index:600;background:#fff;
-  border:3px solid var(--og);color:var(--og);border-radius:12px;padding:8px 12px;
-  font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #0002;}
-#viewBtn:active{transform:translateY(2px);box-shadow:none;}
-#panel{flex:0 0 auto;background:#fff;border-top:4px solid #ffb74d;
-  padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px;z-index:500;}
+
+/* ===== ヘッダー：駅の看板風 ===== */
+header{flex:0 0 auto;position:relative;z-index:500;
+  background:linear-gradient(180deg,#ffb74d 0%,var(--og) 100%);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:4px solid var(--ink);}
+header::after{ /* 看板下の点線レール */
+  content:"";position:absolute;left:0;right:0;bottom:-2px;height:0;
+  border-bottom:2px dashed rgba(255,255,255,.55);}
+header .logo{font-size:26px;filter:drop-shadow(2px 2px 0 var(--ink));
+  animation:loco-bounce 2.4s ease-in-out infinite;}
+@keyframes loco-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+header b{
+  font-family:"Mochiy Pop One","M PLUS Rounded 1c",sans-serif;
+  font-size:18px;font-weight:400;letter-spacing:.04em;color:#fff;
+  text-shadow:2px 2px 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink);}
+#coins{margin-left:auto;background:var(--sun);color:var(--ink);
+  border:3px solid var(--ink);border-radius:999px;
+  padding:4px 13px;font-weight:800;font-size:15px;
+  box-shadow:var(--hard-sm);white-space:nowrap;
+  transition:transform .15s;}
+#coins.pop{animation:coinPop .45s cubic-bezier(.2,1.8,.4,1);}
+@keyframes coinPop{0%{transform:scale(1)}40%{transform:scale(1.25) rotate(-6deg)}100%{transform:scale(1)}}
+
+#map{flex:1 1 auto;background:#bfe3f2;z-index:1;}
+.leaflet-container{font-family:inherit;background:#bfe3f2;}
+
+/* ===== ビュー切替：シールボタン ===== */
+#viewBtn{position:absolute;top:66px;right:12px;z-index:600;
+  background:var(--paper);border:3px solid var(--ink);color:var(--ink);
+  border-radius:999px;padding:9px 14px;font-size:13px;font-weight:800;
+  font-family:inherit;cursor:pointer;box-shadow:var(--hard-sm);
+  transition:transform .12s,box-shadow .12s;}
+#viewBtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
+
+/* ===== パネル：きっぷ風 ===== */
+#panel{flex:0 0 auto;background:var(--cream);z-index:500;
+  border-top:4px solid var(--ink);position:relative;
+  padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px;}
+#panel::before{ /* きっぷのパンチ穴 */
+  content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  width:22px;height:22px;border-radius:50%;background:var(--sky);
+  border:4px solid var(--ink);}
 .chips{display:flex;gap:6px;flex-wrap:wrap;}
-.chip{display:inline-flex;align-items:center;gap:4px;background:#fff3e0;color:var(--br);
-  border:2px solid #ffcc80;border-radius:999px;padding:4px 11px;font-size:13px;font-weight:700;}
-.chip.line{border:none;color:#fff;}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--paper);color:var(--ink);
+  border:2.5px solid var(--ink);border-radius:999px;padding:4px 11px;
+  font-size:13px;font-weight:700;box-shadow:2px 2px 0 var(--ink);}
+.chip.line{color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);}
+
 .controls{display:flex;gap:10px;}
-#roll{flex:1;background:var(--gn);color:#fff;border:none;border-radius:14px;font-size:19px;
-  font-weight:800;padding:15px 0;cursor:pointer;box-shadow:0 4px 0 var(--gnd);font-family:inherit;}
-#roll:disabled{background:#aaa;box-shadow:none;cursor:default;}
-#roll:active:not(:disabled){transform:translateY(4px);box-shadow:none;}
-#die{width:66px;background:#fffde7;border:3px solid #fbc02d;border-radius:16px;
-  display:flex;align-items:center;justify-content:center;font-size:38px;}
+#roll{flex:1;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#85d98f 0%,var(--grass) 55%,#54b463 100%);
+  color:#fff;border:3px solid var(--ink);border-radius:16px;font-size:19px;
+  font-weight:800;padding:15px 0;cursor:pointer;box-shadow:var(--hard);
+  font-family:inherit;text-shadow:1px 2px 0 rgba(0,0,0,.3);
+  transition:transform .12s,box-shadow .12s;}
+#roll::after{ /* キャンディの艶 */
+  content:"";position:absolute;top:4px;left:8px;right:8px;height:38%;
+  background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);
+  border-radius:10px;pointer-events:none;}
+#roll:disabled{background:#cfcabf;box-shadow:var(--hard);color:#fff;cursor:default;filter:saturate(.4);}
+#roll:active:not(:disabled){transform:translate(4px,4px);box-shadow:0 0 0 var(--ink);}
+#die{width:66px;background:var(--paper);border:3px solid var(--ink);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  box-shadow:var(--hard-sm);}
 #die.shake{animation:shake .5s linear;}
 @keyframes shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg) scale(1.1)}50%{transform:rotate(12deg)}75%{transform:rotate(-8deg)}}
 
-/* ===== ルーレット ===== */
+/* ===== ルーレット：スロットマシン風 ===== */
 #rouletteWindow{
   width:280px;height:70px;overflow:hidden;position:relative;
-  border:3px solid #ffb74d;border-radius:14px;background:#fffde7;
-  box-shadow:inset 0 0 20px rgba(255,183,77,0.2);
-}
+  border:4px solid var(--ink);border-radius:14px;background:var(--paper);
+  box-shadow:var(--hard), inset 0 0 22px rgba(255,217,61,.35);}
 #rouletteWindow::before,#rouletteWindow::after{
-  content:"";position:absolute;left:0;right:0;height:18px;z-index:2;pointer-events:none;
-}
-#rouletteWindow::before{top:0;background:linear-gradient(to bottom,#fffde7,transparent);}
-#rouletteWindow::after{bottom:0;background:linear-gradient(to top,#fffde7,transparent);}
-/* 選択ハイライト枠 */
+  content:"";position:absolute;left:0;right:0;height:18px;z-index:2;pointer-events:none;}
+#rouletteWindow::before{top:0;background:linear-gradient(to bottom,var(--paper),transparent);}
+#rouletteWindow::after{bottom:0;background:linear-gradient(to top,var(--paper),transparent);}
 #rouletteWindow .highlight{
   position:absolute;top:50%;left:4px;right:4px;height:38px;transform:translateY(-50%);
-  border:2px solid var(--og);border-radius:8px;pointer-events:none;z-index:3;
-  background:rgba(255,112,67,0.08);
-}
+  border:3px solid var(--red);border-radius:8px;pointer-events:none;z-index:3;
+  background:rgba(255,90,95,.08);
+  animation:hl-blink 1s steps(2) infinite;}
+@keyframes hl-blink{0%{border-color:var(--red)}50%{border-color:var(--sun)}}
 #rouletteTrack{display:flex;flex-direction:column;transition:transform .08s linear;}
 .roulette-item{
   height:38px;display:flex;align-items:center;justify-content:center;
-  font-size:15px;font-weight:800;color:#1a1410;flex-shrink:0;gap:6px;
-  padding:0 10px;white-space:nowrap;
-}
-.roulette-item .ri-line{font-size:10px;padding:1px 6px;border-radius:999px;color:#fff;font-weight:700;}
+  font-size:15px;font-weight:800;color:var(--ink);flex-shrink:0;gap:6px;
+  padding:0 10px;white-space:nowrap;}
+.roulette-item .ri-line{font-size:10px;padding:1px 6px;border-radius:999px;color:#fff;font-weight:700;
+  border:1.5px solid var(--ink);text-shadow:1px 1px 0 rgba(0,0,0,.3);}
+
+/* ===== サイコロ演出 ===== */
 #diceStage{
   position:fixed;inset:0;z-index:2000;display:none;
   align-items:center;justify-content:center;flex-direction:column;
-  background:radial-gradient(circle at 50% 45%,rgba(0,0,0,0.3),rgba(0,0,0,0.55));
-  pointer-events:none;
-}
+  background:radial-gradient(circle at 50% 45%,rgba(48,36,30,.35),rgba(48,36,30,.6));
+  pointer-events:none;}
 #diceStage.show{display:flex;}
-#diceBox{
-  width:120px;height:120px;
-  filter:drop-shadow(0 8px 14px rgba(0,0,0,0.45));
-}
+#diceBox{width:120px;height:120px;
+  filter:drop-shadow(5px 6px 0 rgba(58,46,42,.85));}
 #diceBox.rolling{animation:diceWobble .9s cubic-bezier(.36,.07,.3,1) forwards;}
 @keyframes diceWobble{
   0%{transform:translateY(-120px) scale(.7) rotate(-18deg);opacity:0;}
@@ -83,84 +134,125 @@ header span{font-size:10px;opacity:.92;}
   48%{transform:translateY(0) scale(1.02) rotate(6deg);}
   64%{transform:translateY(-14px) scale(1) rotate(-4deg);}
   80%{transform:translateY(0) scale(1) rotate(2deg);}
-  100%{transform:translateY(0) scale(1) rotate(0);}
-}
+  100%{transform:translateY(0) scale(1) rotate(0);}}
 #diceBox svg{width:100%;height:100%;display:block;}
 #diceResult{
-  margin-top:30px;font-size:32px;font-weight:900;color:#fff;
-  text-shadow:0 2px 12px rgba(0,0,0,0.6);opacity:0;
-  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
-}
+  margin-top:30px;font-size:34px;color:#fff;
+  font-family:"Mochiy Pop One","M PLUS Rounded 1c",sans-serif;font-weight:400;
+  text-shadow:3px 3px 0 var(--ink);opacity:0;}
 #diceResult.show{animation:resultPop .5s cubic-bezier(.2,1.5,.4,1) forwards;}
-@keyframes resultPop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:scale(1)}}
+@keyframes resultPop{0%{opacity:0;transform:scale(.4) rotate(-8deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 #diceStage.landed #diceBox{animation:diceLand .35s ease-out;}
 @keyframes diceLand{0%,100%{transform:translate(0,0)}25%{transform:translate(-5px,3px) scale(1.06)}50%{transform:translate(4px,-2px) scale(.97)}75%{transform:translate(-3px,1px)}}
+
 .transfer .q{font-size:13px;font-weight:700;margin-bottom:6px;}
 .transfer .opts{display:flex;flex-wrap:wrap;gap:6px;}
-.move-head{font-size:14px;font-weight:700;text-align:center;padding:6px 0;}
-.move-head b{color:var(--og);font-size:18px;}
-/* 地図上オーバーレイ矢印 */
+.move-head{font-size:14px;font-weight:800;text-align:center;padding:6px 0;}
+.move-head b{color:var(--red);font-size:20px;
+  font-family:"Mochiy Pop One",sans-serif;font-weight:400;}
+
+/* ===== ナビ矢印：シールバブル ===== */
 .nav-marker{cursor:pointer;pointer-events:auto;}
 .nav-bubble{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.92);border:3px solid #ccc;border-radius:14px;
-  padding:6px 8px;gap:2px;min-width:60px;
-  box-shadow:0 3px 12px rgba(0,0,0,0.25);
-  transition:transform .1s;font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
-  backdrop-filter:blur(4px);
-}
-.nav-bubble:hover{transform:scale(1.08);}
-.nav-bubble:active{transform:scale(.95);}
-.nav-arrow{font-size:22px;line-height:1;}
-.nav-name{font-size:10px;font-weight:800;white-space:nowrap;color:#1a1410;}
+  background:var(--paper);
+  border:3px solid var(--ink);border-radius:16px;
+  padding:7px 9px;gap:2px;min-width:62px;
+  outline:3px solid #fff;             /* シールの白フチ */
+  box-shadow:var(--hard-sm);
+  transition:transform .12s;
+  font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  animation:bubblePop .28s cubic-bezier(.2,1.6,.4,1) backwards;}
+@keyframes bubblePop{0%{transform:scale(.3) rotate(-8deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.nav-bubble:hover{transform:scale(1.1) rotate(-2deg);}
+.nav-bubble:active{transform:scale(.92);}
+.nav-arrow{font-size:22px;line-height:1;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.2));}
+.nav-name{font-size:10px;font-weight:800;white-space:nowrap;color:var(--ink);}
 .nav-xfer{font-size:9px;font-weight:700;white-space:nowrap;}
 .nav-line{font-size:9px;font-weight:700;white-space:nowrap;}
-/* 現在地パルスリング */
+
+/* ===== 現在地リング ===== */
 .pulse-ring{
   width:40px;height:40px;border-radius:50%;
-  border:3px solid currentColor;
+  border:4px solid currentColor;
   animation:pulse-anim 1.4s ease-out infinite;
-  pointer-events:none;
-}
+  pointer-events:none;}
+.pulse-ring::after{content:"";position:absolute;inset:6px;border-radius:50%;
+  border:2px dashed currentColor;opacity:.6;}
 @keyframes pulse-anim{
-  0%{transform:scale(1);opacity:.9;}
+  0%{transform:scale(1);opacity:.95;}
   70%{transform:scale(2.2);opacity:0;}
-  100%{transform:scale(2.2);opacity:0;}
-}
-.tbtn{background:#fff;border-radius:12px;padding:9px 13px;font-size:13px;font-weight:800;
-  cursor:pointer;font-family:inherit;border-width:3px;border-style:solid;}
-.tbtn:active{transform:scale(.97);}
-#legend{flex:0 0 auto;background:var(--br);display:flex;gap:8px;padding:5px 14px;flex-wrap:wrap;z-index:500;}
+  100%{transform:scale(2.2);opacity:0;}}
+
+.tbtn{background:var(--paper);border-radius:12px;padding:9px 13px;font-size:13px;font-weight:800;
+  cursor:pointer;font-family:inherit;border-width:3px;border-style:solid;box-shadow:var(--hard-sm);
+  transition:transform .12s,box-shadow .12s;}
+.tbtn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
+
+/* ===== 凡例 ===== */
+#legend{flex:0 0 auto;background:var(--ink);display:flex;gap:8px;padding:6px 14px;flex-wrap:wrap;z-index:500;}
 #legend .item{display:flex;align-items:center;gap:4px;}
-#legend .bar{width:16px;height:5px;border-radius:3px;}
-#legend span{font-size:10px;color:#fff;}
-.overlay{position:fixed;inset:0;z-index:1000;background:#000a;display:none;
+#legend .bar{width:16px;height:6px;border-radius:3px;border:1px solid rgba(255,255,255,.3);}
+#legend span{font-size:10px;color:#fff;font-weight:700;}
+
+/* ===== オーバーレイ＆カード：コミック吹き出し風 ===== */
+.overlay{position:fixed;inset:0;z-index:1000;background:rgba(48,36,30,.55);display:none;
   align-items:center;justify-content:center;padding:18px;}
-.overlay.show{display:flex;animation:fade .35s;}
+.overlay.show{display:flex;animation:fade .3s;}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-.card{background:#fff;border-radius:20px;padding:18px;max-width:360px;width:100%;
-  display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px #0006;}
-.card .stn{font-size:13px;color:var(--og);font-weight:800;}
-.card .fact-box{font-size:14px;line-height:1.7;background:#fff8e1;padding:12px;border-radius:12px;}
-.quiz-type{align-self:center;background:#e3f2fd;color:#1565c0;border-radius:999px;
-  padding:2px 12px;font-size:12px;font-weight:700;}
+.card{background:var(--paper);border:4px solid var(--ink);border-radius:22px;
+  padding:18px;max-width:360px;width:100%;
+  display:flex;flex-direction:column;gap:10px;
+  box-shadow:var(--hard), 0 18px 40px rgba(0,0,0,.35);
+  animation:cardIn .35s cubic-bezier(.2,1.5,.4,1);position:relative;}
+@keyframes cardIn{0%{transform:scale(.7) rotate(-3deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.card::before{ /* マスキングテープ */
+  content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-3deg);
+  width:90px;height:24px;background:rgba(255,217,61,.85);
+  border:2px solid var(--ink);border-radius:4px;}
+.card .stn{font-size:13px;color:var(--red);font-weight:800;}
+.card .fact-box{font-size:14px;line-height:1.7;background:#fff3cf;
+  border:2.5px dashed var(--ink);padding:12px;border-radius:12px;}
+.quiz-type{align-self:center;background:var(--sky);color:var(--ink);
+  border:2.5px solid var(--ink);border-radius:999px;
+  padding:2px 14px;font-size:12px;font-weight:800;box-shadow:2px 2px 0 var(--ink);}
 .quiz-q{font-size:18px;font-weight:800;text-align:center;margin:6px 0;}
-.qopts{display:flex;flex-direction:column;gap:8px;}
-.qopt{background:#fff;border:3px solid #ffb74d;border-radius:12px;padding:12px;
-  font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;transition:transform .08s;}
-.qopt:active:not(:disabled){transform:scale(.97);}
+.qopts{display:flex;flex-direction:column;gap:9px;}
+.qopt{background:var(--paper);border:3px solid var(--ink);border-radius:14px;padding:12px;
+  font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;
+  box-shadow:var(--hard-sm);transition:transform .1s,box-shadow .1s;}
+.qopt:active:not(:disabled){transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
 .qopt:disabled{cursor:default;}
-.result{text-align:center;font-size:16px;font-weight:800;margin-top:4px;}
-.bigbtn{color:#fff;border:none;border-radius:14px;padding:13px;font-size:16px;
-  font-weight:800;cursor:pointer;font-family:inherit;transition:transform .08s;}
-.bigbtn:active{transform:translateY(3px);}
+.result{text-align:center;font-size:17px;font-weight:800;margin-top:4px;
+  font-family:"Mochiy Pop One",sans-serif;font-weight:400;}
+.bigbtn{color:#fff;border:3px solid var(--ink);border-radius:16px;padding:13px;font-size:16px;
+  font-weight:800;cursor:pointer;font-family:inherit;
+  box-shadow:var(--hard);transition:transform .12s,box-shadow .12s;
+  text-shadow:1px 1px 0 rgba(0,0,0,.3);position:relative;overflow:hidden;}
+.bigbtn::after{content:"";position:absolute;top:3px;left:7px;right:7px;height:36%;
+  background:linear-gradient(180deg,rgba(255,255,255,.45),transparent);
+  border-radius:10px;pointer-events:none;}
+.bigbtn:active{transform:translate(4px,4px);box-shadow:0 0 0 var(--ink);}
 .train-wrap{position:absolute;pointer-events:none;z-index:900;}
+
+/* ===== 紙吹雪 ===== */
+#confetti{position:fixed;inset:0;z-index:1500;pointer-events:none;overflow:hidden;}
+.cf{position:absolute;top:-14px;width:11px;height:11px;
+  animation:cf-fall linear forwards;}
+@keyframes cf-fall{
+  0%{transform:translateY(0) rotate(0);opacity:1;}
+  90%{opacity:1;}
+  100%{transform:translateY(105vh) rotate(720deg);opacity:0;}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001s !important;transition-duration:.001s !important;}
+}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <span style="font-size:24px">🚃</span>
+    <span class="logo">🚂</span>
     <div><b>あいち でんしゃ すごろく</b></div>
     <div id="coins">🪙 0</div>
   </header>
@@ -174,6 +266,7 @@ header span{font-size:10px;opacity:.92;}
 </div>
 <div class="overlay" id="ovPopup"><div class="card" id="popupCard"></div></div>
 <div class="overlay" id="ovWin"><div class="card" style="text-align:center;align-items:center" id="winCard"></div></div>
+<div id="confetti"></div>
 <!-- ルーレット -->
 <div class="overlay" id="ovRoulette">
   <div class="card" id="rouletteCard" style="align-items:center;gap:14px">
@@ -209,7 +302,7 @@ const GOOGLE_MAPS_API_KEY=""; // ← キーを入れるとGoogle Mapsになる
 /* ======= ドット絵電車 ======= */
 const ART=[
   "0000000000000000","0033333333333300","0311111111111130","3111111111111113",
-  "3122112211221113","3122112211221143","3111111111111113","3166666666666613",
+  "3127112711221113","3122112211221143","3118111811111113","3166666666666613",
   "3111111111111113","3111111111111113","0350000000000530","0055000000005500",
 ];
 function shade(hex,amt){
@@ -220,7 +313,7 @@ function shade(hex,amt){
 }
 function makeTrainDataURL(color){
   const dark=shade(color,-40),light=shade(color,35);
-  const pal={"0":null,"1":color,"2":"#bfe9ff","3":dark,"4":"#fff7b0","5":"#444","6":light};
+  const pal={"0":null,"1":color,"2":"#c8f0ff","3":dark,"4":"#fff7b0","5":"#3c322e","6":light,"7":"#282320","8":"#ffa0aa"};
   const S=4,cv=document.createElement("canvas");
   cv.width=16*S;cv.height=12*S;
   const ctx=cv.getContext("2d");
@@ -620,7 +713,8 @@ function showNavMarkers(){
         :cand.isTransfer?"background:rgba(230,245,255,0.95)":"";
 
       const goArg=JSON.stringify({line:cand.line,idx:cand.idx,isTransfer:cand.isTransfer,via:cand.via});
-      const html=`<div class="nav-bubble" style="border-color:${color};${bg}" onclick='window._go(${JSON.stringify(goArg)})'>
+      const delay=(navMarkers.length*0.05).toFixed(2);
+      const html=`<div class="nav-bubble" style="border-color:${color};${bg};animation-delay:${delay}s" onclick='window._go(${JSON.stringify(goArg)})'>
         <div class="nav-arrow">${ARROW_FOR_DEG[dir]}</div>
         <div class="nav-name">${cand.station.name}</div>
         ${lineBadge}${trBadge}${backBadge}
@@ -749,7 +843,11 @@ function _ans(i){
     else if(bi===i){b.style.background="#ffcdd2";b.style.borderColor="#e53935";}
   });
   const ok=i===q.c;
-  if(ok){coins++;$("coins").textContent="🪙 "+coins;}
+  if(ok){
+    coins++;
+    const ce=$("coins"); ce.textContent="🪙 "+coins;
+    ce.classList.remove("pop"); void ce.offsetWidth; ce.classList.add("pop");
+  }
   $("qresult").innerHTML=
     `<div class="result" style="color:${ok?"#2e7d32":"#c62828"}">${ok?"🎉 せいかい！ コイン +1":"ざんねん… また がんばろう！"}</div>`+
     `<button class="bigbtn" style="background:var(--og);box-shadow:0 4px 0 var(--ogd);margin-top:8px" onclick="_closePopup()">つぎへ ▶</button>`;
@@ -862,7 +960,27 @@ function showRouletteResult(chosen){
 }
 
 /* ======= 勝利 ======= */
+/* ======= 紙吹雪 ======= */
+function burstConfetti(){
+  const box=$("confetti");
+  const colors=["#ff5a5f","#ffd93d","#6bcb77","#7ec8e3","#b388ff","#ff8a3d"];
+  const shapes=["50%","2px","50% 0 50% 0"];
+  for(let i=0;i<70;i++){
+    const p=document.createElement("div");
+    p.className="cf";
+    p.style.left=Math.random()*100+"vw";
+    p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.borderRadius=shapes[Math.floor(Math.random()*shapes.length)];
+    p.style.animationDuration=(1.8+Math.random()*1.6)+"s";
+    p.style.animationDelay=(Math.random()*0.6)+"s";
+    p.style.width=p.style.height=(7+Math.random()*8)+"px";
+    box.appendChild(p);
+    setTimeout(()=>p.remove(),4200);
+  }
+}
+
 function showWin(){
+  burstConfetti();
   const goalStn=STATIONS[GOAL_LINE][GOAL_IDX];
   const isExact=cur.line===GOAL_LINE&&cur.idx===GOAL_IDX;
   const curStnName=STATIONS[cur.line][cur.idx].name;
